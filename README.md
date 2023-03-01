@@ -3,9 +3,8 @@
 Distributed Systems Project 2022/2023
 
 ## Authors
-
-*(fill the line below with the group identifier, for example A25 or T25, and then delete this line)*  
-**Group GXX**
+ 
+**Group GA29**
 
 ### Code Identification
 
@@ -15,13 +14,11 @@ code dependency management, to ensure your code runs using the correct component
 
 ### Team Members
 
-*(fill the table below with the team members, and then delete this line)*
-
-| Number | Name              | User                             | Email                               |
-|--------|-------------------|----------------------------------|-------------------------------------|
-| 11111  | Alice Distributed | <https://github.com/AliceUser>   | <mailto:alice@tecnico.ulisboa.pt>   |
-| 22222  | Bob Systems       | <https://github.com/BobUser>     | <mailto:bob@tecnico.ulisboa.pt>     |
-| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt> |
+| Number | Name              | User                                   | Email                                            |
+|--------|-------------------|----------------------------------------|--------------------------------------------------|
+| 99222  | Frederico Silva   | <https://github.com/Fredd124>          | <mailto:frederico.m.silva@tecnico.ulisboa.pt>    |
+| 99252  | João Penedo       | <https://github.com/JPenedo11>         | <mailto:joao.penedo@tecnico.ulisboa.pt>          |
+| 99326  | Sebastião Carvalho| <https://github.com/SebastiaoCarvalho> | <mailto:sebastiaovscarvalho@tecnico.ulisboa.pt>  |
 
 ## Getting Started
 
