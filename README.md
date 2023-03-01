@@ -4,7 +4,7 @@ Distributed Systems Project 2022/2023
 
 ## Authors
  
-**Group GA29**
+**Group A29**
 
 ### Code Identification
 
