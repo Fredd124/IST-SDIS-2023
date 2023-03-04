@@ -1,7 +1,8 @@
 package pt.tecnico.distledger.userclient;
 
-
+import io.grpc.ManagedChannel;
 import pt.tecnico.distledger.userclient.grpc.UserService;
+import pt.ulisboa.tecnico.distledger.contract.user.*;
 
 public class UserClientMain {
     public static void main(String[] args) {
@@ -23,9 +24,15 @@ public class UserClientMain {
 
         final String host = args[0];
         final int port = Integer.parseInt(args[1]);
+        final String target = host + ":" + port;
 
-        CommandParser parser = new CommandParser(new UserService());
-        parser.parseInput();
+        UserService service = new UserService();
+        CommandParser parser = new CommandParser(service);
 
+        ManagedChannel channel = service.creatChannel(target);
+        UserServiceGrpc.UserServiceBlockingStub stub = service.createStub(channel);
+        parser.parseInput(stub);
+
+        channel.shutdownNow();
     }
 }

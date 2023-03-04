@@ -1,6 +1,14 @@
 package pt.tecnico.distledger.userclient;
 
 import pt.tecnico.distledger.userclient.grpc.UserService;
+import pt.ulisboa.tecnico.distledger.contract.user.*;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountResponse;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
+import io.grpc.StatusRuntimeException;
 
 import java.util.Scanner;
 
@@ -20,7 +28,7 @@ public class CommandParser {
         this.userService = userService;
     }
 
-    void parseInput() {
+    void parseInput(UserServiceGrpc.UserServiceBlockingStub stub) {
 
         Scanner scanner = new Scanner(System.in);
         boolean exit = false;
@@ -33,19 +41,19 @@ public class CommandParser {
             try{
                 switch (cmd) {
                     case CREATE_ACCOUNT:
-                        this.createAccount(line);
+                        this.createAccount(line,stub);
                         break;
 
                     case DELETE_ACCOUNT:
-                        this.deleteAccount(line);
+                        this.deleteAccount(line,stub);
                         break;
 
                     case TRANSFER_TO:
-                        this.transferTo(line);
+                        this.transferTo(line,stub);
                         break;
 
                     case BALANCE:
-                        this.balance(line);
+                        this.balance(line,stub);
                         break;
 
                     case HELP:
@@ -66,7 +74,7 @@ public class CommandParser {
         }
     }
 
-    private void createAccount(String line){
+    private void createAccount(String line, UserServiceGrpc.UserServiceBlockingStub stub){
         String[] split = line.split(SPACE);
 
         if (split.length != 3){
@@ -77,10 +85,17 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        System.out.println("TODO: implement createAccount command");
+        CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
+
+        try {
+            stub.createAccount(request);
+            System.out.println("OK");
+        } catch (StatusRuntimeException e) {
+            System.out.println(e.getStatus().getDescription());
+        }
     }
 
-    private void deleteAccount(String line){
+    private void deleteAccount(String line, UserServiceGrpc.UserServiceBlockingStub stub){
         String[] split = line.split(SPACE);
 
         if (split.length != 3){
@@ -90,11 +105,18 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        System.out.println("TODO: implement deleteAccount command");
+        DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
+
+        try {
+            stub.deleteAccount(request);
+            System.out.println("OK");
+        } catch (StatusRuntimeException e) {
+            System.out.println(e.getStatus().getDescription());
+        }
     }
 
 
-    private void balance(String line){
+    private void balance(String line, UserServiceGrpc.UserServiceBlockingStub stub){
         String[] split = line.split(SPACE);
 
         if (split.length != 3){
@@ -104,10 +126,19 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        System.out.println("TODO: implement balance command");
+        BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
+        BalanceResponse response;
+
+        try {
+            response = stub.balance(request);
+            System.out.println("OK");
+            System.out.println(response);
+        } catch (StatusRuntimeException e) {
+            System.out.println(e.getStatus().getDescription());
+        }
     }
 
-    private void transferTo(String line){
+    private void transferTo(String line, UserServiceGrpc.UserServiceBlockingStub stub){
         String[] split = line.split(SPACE);
 
         if (split.length != 5){
@@ -119,7 +150,14 @@ public class CommandParser {
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
 
-        System.out.println("TODO: implement transferTo command");
+        TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+        
+        try {
+            stub.transferTo(request);
+            System.out.println("OK");
+        } catch (StatusRuntimeException e) {
+            System.out.println(e.getStatus().getDescription());
+        }
     }
 
     private void printUsage() {
