@@ -1,9 +1,7 @@
 package pt.tecnico.distledger.userclient;
 
-
-import pt.tecnico.distledger.userclient.grpc.UserService;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import pt.tecnico.distledger.userclient.grpc.UserService;
 import pt.ulisboa.tecnico.distledger.contract.user.*;
 
 public class UserClientMain {
@@ -28,20 +26,13 @@ public class UserClientMain {
         final int port = Integer.parseInt(args[1]);
         final String target = host + ":" + port;
 
-        // Channel is the abstraction to connect to a service endpoint.
-		// Let us use plaintext communication because we do not have certificates.
-		final ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        UserService service = new UserService();
+        CommandParser parser = new CommandParser(service);
 
-        // It is up to the client to determine whether to block the call.
-		// Here we create a blocking stub, but an async stub,
-		// or an async stub with Future are always possible.
-		UserServiceGrpc.UserServiceBlockingStub stub = UserServiceGrpc.newBlockingStub(channel);
-
-
-        CommandParser parser = new CommandParser(new UserService());
+        ManagedChannel channel = service.creatChannel(target);
+        UserServiceGrpc.UserServiceBlockingStub stub = service.createStub(channel);
         parser.parseInput(stub);
 
         channel.shutdownNow();
-
     }
 }
