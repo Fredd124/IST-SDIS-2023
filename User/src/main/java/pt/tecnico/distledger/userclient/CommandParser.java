@@ -89,7 +89,7 @@ public class CommandParser {
 
         try {
             stub.createAccount(request);
-            System.out.println("OK\n");
+            System.out.println("OK");
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
