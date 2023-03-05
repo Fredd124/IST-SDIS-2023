@@ -1,5 +1,8 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.operation.CreateOp;
+import pt.tecnico.distledger.server.domain.operation.DeleteOp;
+import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
@@ -14,23 +17,42 @@ import io.grpc.stub.StreamObserver;
 public class UserServerImpl extends UserServiceImplBase{
     
     @Override
-    public void balance(BalanceRequest request, StreamObserver<BalanceResponse> streamObserver) {
-
+    public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
+        int balance = 0; //default for now
+        //TODO : add logic to this operation
+        BalanceResponse response = BalanceResponse.newBuilder().setValue(balance).build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     } 
 
     @Override
-    public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> streamObserver) {
+    public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
+
+        CreateOp op = new CreateOp(request.getUserId());
+        //TODO : add logic to this operation
+        CreateAccountResponse response = CreateAccountResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
 
     }
 
     @Override
-    public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> streamObserver) {
+    public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
 
+        DeleteOp op = new DeleteOp(request.getUserId());
+        //TODO : add logic to this operation
+        DeleteAccountResponse response = DeleteAccountResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> streamObserver) {
-        
+    public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
+        TransferOp op = new TransferOp(request.getAccountFrom(), request.getAccountFrom(), request.getAmount());
+        //TODO : add logic to this operation
+        TransferToResponse response = TransferToResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
 }
