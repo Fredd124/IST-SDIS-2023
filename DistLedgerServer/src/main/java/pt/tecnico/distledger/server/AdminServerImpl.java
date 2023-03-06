@@ -56,9 +56,11 @@ public class AdminServerImpl extends AdminServiceImplBase {
             DistLedgerCommonDefinitions.Operation operation = converter.getMessageOp();
             ledgerState.add(operation);
         }
+        DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState.newBuilder()
+                                                                    .addAllLedger(ledgerState).build();
         
         getLedgerStateResponse response = getLedgerStateResponse.newBuilder()
-                                            .setRepeatedField(null, 0, ledgerState).build();
+                                            .setLedgerState(ledgerStateGrpc).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
