@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.CreateOp;
 import pt.tecnico.distledger.server.domain.operation.DeleteOp;
 import pt.tecnico.distledger.server.domain.operation.TransferOp;
@@ -16,6 +17,12 @@ import io.grpc.stub.StreamObserver;
 
 public class UserServerImpl extends UserServiceImplBase{
     
+    private ServerState state;
+
+    public UserServerImpl(ServerState state) {
+        this.state = state;
+    }
+
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
         int balance = 0; //default for now

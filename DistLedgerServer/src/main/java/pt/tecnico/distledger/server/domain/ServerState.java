@@ -3,16 +3,45 @@ package pt.tecnico.distledger.server.domain;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ServerState {
+
     private List<Operation> ledger;
+    private boolean active;
+    private Map<String, Integer> accountMap;
 
     public ServerState() {
         this.ledger = new ArrayList<>();
+        this.active = false;
+        this.accountMap = new HashMap<>();
     }
 
-    /* TODO: Here should be declared all the server state attributes
-         as well as the methods to access and interact with the state. */
+
+    public boolean getActive() {
+        return this.active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public void activate() {
+        setActive(true);
+    }
+
+    public void deactivate() {
+        setActive(false);
+    }
+
+    public int getBalance(String userId) {
+        return accountMap.get(userId);
+    }
+
+    public List<Operation> getLedgerState() {
+        return this.ledger;
+    }
 
 }

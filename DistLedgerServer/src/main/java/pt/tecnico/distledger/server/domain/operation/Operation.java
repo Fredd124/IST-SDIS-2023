@@ -14,5 +14,4 @@ public class Operation {
     public void setAccount(String account) {
         this.account = account;
     }
-
 }
