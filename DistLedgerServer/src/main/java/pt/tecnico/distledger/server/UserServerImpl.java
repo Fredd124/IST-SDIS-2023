@@ -101,13 +101,10 @@ public class UserServerImpl extends UserServiceImplBase{
         }
         else{
             state.transfer(fromUserId, toUserId, value);
-            TransferOp transferOp = new TransferOp(fromUserId, toUserId, value);
-            state.getLedgerState().add(transferOp);
+            TransferToResponse response = TransferToResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
-
-        TransferToResponse response = TransferToResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 
 }
