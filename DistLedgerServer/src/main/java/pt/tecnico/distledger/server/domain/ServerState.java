@@ -1,6 +1,6 @@
 package pt.tecnico.distledger.server.domain;
 
-import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.tecnico.distledger.server.domain.operation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,4 +44,32 @@ public class ServerState {
         return this.ledger;
     }
 
+    public boolean containsUser(String userId) {
+        return accountMap.containsKey(userId);
+    }
+
+    public void createAccount(String userId, int initialBalance) {
+        accountMap.put(userId, initialBalance);
+        CreateOp createOp = new CreateOp(userId);
+        ledger.add(createOp);
+    }
+
+    public void createAccount(String userId) {
+        createAccount(userId, 0);
+        CreateOp createOp = new CreateOp(userId);
+        ledger.add(createOp);
+    }
+
+    public void deleteAccount(String userId) {
+        accountMap.remove(userId);
+        DeleteOp deleteOp = new DeleteOp(userId);
+        ledger.add(deleteOp);
+    }
+
+    public void transfer(String fromAccount, String toAccount, int amount) {
+        accountMap.put(fromAccount, accountMap.get(fromAccount) - amount);
+        accountMap.put(toAccount, accountMap.get(toAccount) + amount);
+        TransferOp transferOp = new TransferOp(fromAccount, toAccount, amount);
+        ledger.add(transferOp);
+    }
 }

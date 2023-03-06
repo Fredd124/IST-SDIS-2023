@@ -14,7 +14,10 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceImplBase;
+
 import io.grpc.stub.StreamObserver;
+import static io.grpc.Status.INVALID_ARGUMENT;
+
 
 public class UserServerImpl extends UserServiceImplBase{
     
@@ -26,38 +29,82 @@ public class UserServerImpl extends UserServiceImplBase{
 
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
-        int balance = 0; //default for now
         //TODO : add logic to this operation
-        BalanceResponse response = BalanceResponse.newBuilder().setValue(balance).build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        String userId = request.getUserId();
+
+        //check if userId exists
+        if(!state.containsUser(userId)){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("User does not exist").asRuntimeException());
+        }
+
+        else{
+            int balance = state.getBalance(userId);
+            BalanceResponse response = BalanceResponse.newBuilder().setValue(balance).build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     } 
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
-
-        CreateOp op = new CreateOp(request.getUserId());
         //TODO : add logic to this operation
-        CreateAccountResponse response = CreateAccountResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        String userId = request.getUserId();
+
+        //check if userId exists
+        if(state.containsUser(userId)){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("User already exists").asRuntimeException());
+        }
+        else{
+            state.createAccount(userId);
+            CreateAccountResponse response = CreateAccountResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
 
     }
 
     @Override
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
-
-        DeleteOp op = new DeleteOp(request.getUserId());
         //TODO : add logic to this operation
-        DeleteAccountResponse response = DeleteAccountResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        String userId = request.getUserId();
+
+        //check if userId exists
+        if(!state.containsUser(userId)){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("User does not exist").asRuntimeException());
+        }
+        else{
+            state.deleteAccount(userId);
+            DeleteAccountResponse response = DeleteAccountResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     }
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
-        TransferOp op = new TransferOp(request.getAccountFrom(), request.getAccountFrom(), request.getAmount());
         //TODO : add logic to this operation
+        String fromUserId = request.getAccountFrom();
+        String toUserId = request.getAccountTo();
+        int value = request.getAmount();
+
+        //check if fromUserId exists
+        if(!state.containsUser(fromUserId)){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Origin user does not exist").asRuntimeException());
+        }
+        //check if toUserId exists
+        else if(!state.containsUser(toUserId)){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Destination user does not exist").asRuntimeException());
+        }
+        //check if fromUserId has enough balance
+        else if(state.getBalance(fromUserId) < value){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Origin user does not have enough balance").asRuntimeException());
+        }
+        else{
+            state.transfer(fromUserId, toUserId, value);
+            TransferOp transferOp = new TransferOp(fromUserId, toUserId, value);
+            state.getLedgerState().add(transferOp);
+        }
+
         TransferToResponse response = TransferToResponse.newBuilder().build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
