@@ -26,4 +26,9 @@ public class TransferOp extends Operation {
         this.amount = amount;
     }
 
+    @Override
+    public String getType(){
+        return "OP_TRANSFER_TO";
+    }
+
 }

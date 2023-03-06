@@ -1,5 +1,7 @@
 package pt.tecnico.distledger.server.domain.operation;
 
+import java.lang.UnsupportedOperationException;
+
 public class Operation {
     private String account;
 
@@ -13,6 +15,10 @@ public class Operation {
 
     public void setAccount(String account) {
         this.account = account;
+    }
+
+    public String getType(){
+        throw new UnsupportedOperationException();
     }
 
 }
