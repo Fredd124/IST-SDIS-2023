@@ -13,6 +13,10 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.GossipRespon
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
+import pt.tecnico.distledger.server.domain.operation.Converter;
+
+import java.util.ArrayList;
+
 import io.grpc.stub.StreamObserver;
 
 public class AdminServerImpl extends AdminServiceImplBase {
@@ -46,13 +50,15 @@ public class AdminServerImpl extends AdminServiceImplBase {
 
     @Override
     public void getLedgerState(getLedgerStateRequest request, StreamObserver<getLedgerStateResponse> responseObserver) {
-        LedgerState ledger = LedgerState.newBuilder()
+        ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
         for (Operation op: state.getLedgerState()) {
-            DistLedgerCommonDefinitions.Operation opMessage = null; // TODO : add built function
-            ledger.
+            Converter converter = new Converter(op);
+            DistLedgerCommonDefinitions.Operation operation = converter.getMessageOp();
+            ledgerState.add(operation);
         }
         
-        getLedgerStateResponse response = getLedgerStateResponse.newBuilder().setLedgerState(null).build();
+        getLedgerStateResponse response = getLedgerStateResponse.newBuilder()
+                                            .setRepeatedField(null, 0, ledgerState).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
