@@ -2,6 +2,8 @@ package pt.tecnico.distledger.adminclient;
 
 import pt.tecnico.distledger.adminclient.grpc.AdminService;
 
+import java.util.ArrayList;
+
 import java.util.Scanner;
 
 public class CommandParser {
@@ -69,7 +71,7 @@ public class CommandParser {
         }
         String server = split[1];
 
-        System.out.println("TODO: implement activate command");
+        adminService.activate();
     }
 
     private void deactivate(String line){
@@ -81,7 +83,7 @@ public class CommandParser {
         }
         String server = split[1];
 
-        System.out.println("TODO: implement deactivate command");
+        adminService.deactivate();
     }
 
     private void dump(String line){
@@ -93,13 +95,14 @@ public class CommandParser {
         }
         String server = split[1];
 
-        System.out.println("TODO: implement getLedgerState command");
+        adminService.getLedgerState();
     }
 
     @SuppressWarnings("unused")
     private void gossip(String line){
         /* TODO Phase-3 */
-        System.out.println("TODO: implement gossip command (only for Phase-3)");
+        //System.out.println("TODO: implement gossip command (only for Phase-3)");
+        adminService.gossip();
     }
     private void printUsage() {
         System.out.println("Usage:\n" +
