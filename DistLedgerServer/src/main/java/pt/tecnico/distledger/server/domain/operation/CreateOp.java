@@ -6,4 +6,8 @@ public class CreateOp extends Operation {
         super(account);
     }
 
+    @Override
+    public String getType(){
+        return "OP_CREATE_ACCOUNT";
+    }
 }

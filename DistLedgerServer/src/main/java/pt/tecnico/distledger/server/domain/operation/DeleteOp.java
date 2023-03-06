@@ -6,4 +6,9 @@ public class DeleteOp extends Operation {
         super(account);
     }
 
+    @Override
+    public String getType(){
+        return "OP_DELETE_ACCOUNT";
+    }
+
 }
