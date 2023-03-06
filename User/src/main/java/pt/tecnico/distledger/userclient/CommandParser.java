@@ -132,7 +132,7 @@ public class CommandParser {
         try {
             response = stub.balance(request);
             System.out.println("OK");
-            System.out.println(response);
+            System.out.println(response.getValue());
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
