@@ -1,4 +1,4 @@
-package pt.tecnico.distledger.server;
+package pt.tecnico.distledger.server.domain;
 
 public enum ErrorMessage {
     SERVER_NOT_ACTIVE("The server provided is not active"),

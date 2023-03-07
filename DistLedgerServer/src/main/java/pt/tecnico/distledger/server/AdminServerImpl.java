@@ -13,6 +13,7 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.tecnico.distledger.server.domain.operation.Converter;
+import pt.tecnico.distledger.server.domain.ErrorMessage;
 
 import java.util.ArrayList;
 import io.grpc.stub.StreamObserver;
@@ -29,7 +30,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void activate(ActivateRequest request,
             StreamObserver<ActivateResponse> responseObserver) {
-
+                
         if (state.getActive() == true) {
             responseObserver.onError(
                     INVALID_ARGUMENT.withDescription("Server is already active")

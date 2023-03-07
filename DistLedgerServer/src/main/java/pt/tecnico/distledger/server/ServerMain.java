@@ -24,7 +24,8 @@ public class ServerMain {
 		}
 
 		final int port = Integer.parseInt(args[0]);
-        ServerState state = new ServerState();
+        final boolean debug = args.length > 2 ? true: false;
+        ServerState state = new ServerState(debug);
         final BindableService adminImpl = new AdminServerImpl(state);
         final BindableService userImpl = new UserServerImpl(state);
 

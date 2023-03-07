@@ -11,11 +11,13 @@ public class ServerState {
 
     private List<Operation> ledger;
     private boolean active;
+    private boolean debug;
     private Map<String, Integer> accountMap;
 
-    public ServerState() {
+    public ServerState(boolean debug) {
         this.ledger = new ArrayList<>();
         this.active = true;
+        this.debug = debug;
         this.accountMap = new HashMap<>();
         createBroker();
     }
@@ -24,7 +26,7 @@ public class ServerState {
         return this.active;
     }
 
-    public void setActive(boolean active) {
+    private void setActive(boolean active) {
         this.active = active;
     }
 
@@ -34,6 +36,10 @@ public class ServerState {
 
     public void deactivate() {
         setActive(false);
+    }
+
+    public void debugPrint(String message) {
+        if (debug) System.out.println(message);
     }
 
     public int getBalance(String userId) {
