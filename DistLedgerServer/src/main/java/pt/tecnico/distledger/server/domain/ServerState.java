@@ -15,10 +15,10 @@ public class ServerState {
 
     public ServerState() {
         this.ledger = new ArrayList<>();
-        this.active = false;
+        this.active = true;
         this.accountMap = new HashMap<>();
+        createBroker();
     }
-
 
     public boolean getActive() {
         return this.active;
@@ -48,10 +48,8 @@ public class ServerState {
         return accountMap.containsKey(userId);
     }
 
-    public void createAccount(String userId, int initialBalance) { // broker
-        accountMap.put(userId, initialBalance);
-        CreateOp createOp = new CreateOp(userId);
-        ledger.add(createOp);
+    public void createBroker() { // broker
+        accountMap.put("broker", 1000);
     }
 
     public void createAccount(String userId) {
