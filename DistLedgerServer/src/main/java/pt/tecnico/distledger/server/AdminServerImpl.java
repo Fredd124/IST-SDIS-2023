@@ -3,7 +3,6 @@ package pt.tecnico.distledger.server;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
-import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.*;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.ActivateRequest;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.ActivateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.DeactivateRequest;
@@ -15,10 +14,10 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.tecnico.distledger.server.domain.operation.Converter;
 
-import java.io.Console;
 import java.util.ArrayList;
-
 import io.grpc.stub.StreamObserver;
+import static io.grpc.Status.INVALID_ARGUMENT;
+
 
 public class AdminServerImpl extends AdminServiceImplBase {
     
@@ -30,14 +29,23 @@ public class AdminServerImpl extends AdminServiceImplBase {
     
     @Override
     public void activate(ActivateRequest request, StreamObserver<ActivateResponse> responseObserver) {
+
+        if (state.getActive() == true) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already active").asRuntimeException());
+        } else {
         state.activate();
         ActivateResponse response = ActivateResponse.newBuilder().build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+        }
     }
 
     @Override
     public void deactivate(DeactivateRequest request, StreamObserver<DeactivateResponse> responseObserver) {
+
+        if (state.getActive() == false) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already deactivated").asRuntimeException());
+        }
         state.deactivate();
         DeactivateResponse response = DeactivateResponse.newBuilder().build();
         responseObserver.onNext(response);

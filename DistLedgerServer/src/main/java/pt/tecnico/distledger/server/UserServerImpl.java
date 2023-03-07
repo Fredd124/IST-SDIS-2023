@@ -1,10 +1,6 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.ServerState;
-import pt.tecnico.distledger.server.domain.operation.CreateOp;
-import pt.tecnico.distledger.server.domain.operation.DeleteOp;
-import pt.tecnico.distledger.server.domain.operation.TransferOp;
-import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
@@ -35,7 +31,6 @@ public class UserServerImpl extends UserServiceImplBase{
         if(!state.containsUser(userId)){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("User does not exist").asRuntimeException());
         }
-
         else{
             int balance = state.getBalance(userId);
             BalanceResponse response = BalanceResponse.newBuilder().setValue(balance).build();
@@ -46,7 +41,6 @@ public class UserServerImpl extends UserServiceImplBase{
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
-        //TODO : add logic to this operation
         String userId = request.getUserId();
 
         //check if userId exists
@@ -59,12 +53,10 @@ public class UserServerImpl extends UserServiceImplBase{
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
-
     }
 
     @Override
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
-        //TODO : add logic to this operation
         String userId = request.getUserId();
 
         //check if userId exists
@@ -81,7 +73,6 @@ public class UserServerImpl extends UserServiceImplBase{
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
-        //TODO : add logic to this operation
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
@@ -96,7 +87,7 @@ public class UserServerImpl extends UserServiceImplBase{
         }
         //check if fromUserId has enough balance
         else if(state.getBalance(fromUserId) < value){
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("Origin user does not have enough balance").asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("The owner of the account does not have enough balance").asRuntimeException());
         }
         else{
             state.transfer(fromUserId, toUserId, value);

@@ -30,25 +30,6 @@ public class UserService {
         channel.shutdownNow();
     }
 
-    /* 
-        public ManagedChannel creatChannel(String target) {
-            // Channel is the abstraction to connect to a service endpoint.
-            // Let us use plaintext communication because we do not have certificates.
-            final ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-    
-            return channel;
-        }
-    
-        public UserServiceGrpc.UserServiceBlockingStub createStub(ManagedChannel channel) {
-            // It is up to the client to determine whether to block the call.
-            // Here we create a blocking stub, but an async stub,
-            // or an async stub with Future are always possible.
-            UserServiceGrpc.UserServiceBlockingStub stub = UserServiceGrpc.newBlockingStub(channel);
-        
-            return stub;
-        }        
-    */
-
     public void createAccount(String server, String username) {
         CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
 
