@@ -16,17 +16,21 @@ public class UserService {
 
     private ManagedChannel channel;
     private UserServiceGrpc.UserServiceBlockingStub stub;
+    private boolean debug;
 
     /*TODO: The gRPC client-side logic should be here.
         This should include a method that builds a channel and stub,
         as well as individual methods for each remote operation of this service. */
 
-    public UserService(String target) {
+    public UserService(String target, boolean debug) {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.stub = UserServiceGrpc.newBlockingStub(channel);
+        this.debug = debug;
+        debugPrint("Created user service.");
     }
 
     public void userServiceChannelShutdown() {
+        debugPrint("Shut down client channel.");
         channel.shutdownNow();
     }
 
@@ -34,6 +38,7 @@ public class UserService {
         CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
 
         try {
+            debugPrint("Send create account request to server.");
             stub.createAccount(request);
             System.out.println("OK");
         } catch (StatusRuntimeException e) {
@@ -45,6 +50,7 @@ public class UserService {
         DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
 
         try {
+            debugPrint("Send delete account request to server.");
             stub.deleteAccount(request);
             System.out.println("OK");
         } catch (StatusRuntimeException e) {
@@ -57,6 +63,7 @@ public class UserService {
         BalanceResponse response;
 
         try {
+            debugPrint("Send get balance request to server.");
             response = stub.balance(request);
             System.out.println("OK");
             System.out.println(response.getValue());
@@ -69,6 +76,7 @@ public class UserService {
         TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
         
         try {
+            debugPrint("Send transfer to account request to server.");
             stub.transferTo(request);
             System.out.println("OK");
         } catch (StatusRuntimeException e) {
@@ -76,4 +84,7 @@ public class UserService {
         }
     }
 
+    public void debugPrint(String message) {
+        if (debug) System.err.println(message);
+    }
 }

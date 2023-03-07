@@ -3,6 +3,7 @@ package pt.tecnico.distledger.userclient;
 import pt.tecnico.distledger.userclient.grpc.UserService;
 import java.util.Scanner;
 
+
 public class CommandParser {
 
     private static final String SPACE = " ";
@@ -32,26 +33,32 @@ public class CommandParser {
             try{
                 switch (cmd) {
                     case CREATE_ACCOUNT:
+                        userService.debugPrint("Received from input createAccount command.");
                         this.createAccount(line);
                         break;
 
                     case DELETE_ACCOUNT:
+                        userService.debugPrint("Received from input deleteAccount command.");
                         this.deleteAccount(line);
                         break;
 
                     case TRANSFER_TO:
+                        userService.debugPrint("Received from input transferTo command.");
                         this.transferTo(line);
                         break;
 
                     case BALANCE:
+                        userService.debugPrint("Received from input balance command.");
                         this.balance(line);
                         break;
 
                     case HELP:
+                        userService.debugPrint("Received from input help command.");
                         this.printUsage();
                         break;
 
                     case EXIT:
+                        userService.debugPrint("Received from input exit command.");
                         exit = true;
                         userService.userServiceChannelShutdown();
                         break;
@@ -77,6 +84,7 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
+        userService.debugPrint("Called userService createAccount method.");
         userService.createAccount(server, username);
     }
 
@@ -90,6 +98,7 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
+        userService.debugPrint("Called userService deleteAccount method.");
         userService.deleteAccount(server, username);
     }
 
@@ -104,6 +113,7 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
+        userService.debugPrint("Called userService balance method.");
         userService.balance(server, username);
     }
 
@@ -119,6 +129,7 @@ public class CommandParser {
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
 
+        userService.debugPrint("Called userService transferTo method.");
         userService.transferTo(server, from, dest, amount);
     }
 
