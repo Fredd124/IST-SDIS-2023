@@ -27,8 +27,11 @@ public class UserServerImpl extends UserServiceImplBase{
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
         String userId = request.getUserId();
 
+        if (state.getActive() == false) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is not active").asRuntimeException());
+        }
         //check if userId exists
-        if(!state.containsUser(userId)){
+        else if(!state.containsUser(userId)){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("User does not exist").asRuntimeException());
         }
         else{
@@ -43,10 +46,13 @@ public class UserServerImpl extends UserServiceImplBase{
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
         String userId = request.getUserId();
 
-        //check if userId exists
-        if(state.containsUser(userId)){
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("User already exists").asRuntimeException());
+        if (state.getActive() == false) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is not active").asRuntimeException());
         }
+        //check if userId exists
+        else if(state.containsUser(userId)){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("User already exists").asRuntimeException());
+        } 
         else{
             state.createAccount(userId);
             CreateAccountResponse response = CreateAccountResponse.newBuilder().build();
@@ -59,8 +65,11 @@ public class UserServerImpl extends UserServiceImplBase{
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
         String userId = request.getUserId();
 
+        if (state.getActive() == false) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is not active").asRuntimeException());
+        }
         //check if userId exists
-        if(!state.containsUser(userId)){
+        else if(!state.containsUser(userId)){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("User does not exist").asRuntimeException());
         }
         else{
@@ -77,8 +86,11 @@ public class UserServerImpl extends UserServiceImplBase{
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
 
+        if (state.getActive() == false) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is not active").asRuntimeException());
+        }
         //check if fromUserId exists
-        if(!state.containsUser(fromUserId)){
+        else if(!state.containsUser(fromUserId)){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("Origin user does not exist").asRuntimeException());
         }
         //check if toUserId exists
