@@ -53,6 +53,7 @@ public class CommandParser {
 
                     case EXIT:
                         exit = true;
+                        userService.userServiceChannelShutdown();
                         break;
 
                     default:

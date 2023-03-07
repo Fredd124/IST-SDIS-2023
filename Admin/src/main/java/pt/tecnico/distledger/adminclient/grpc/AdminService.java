@@ -19,11 +19,12 @@ public class AdminService {
         as well as individual methods for each remote operation of this service. */
 
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
+    private ManagedChannel channel;
 
     public AdminService(String host, int port) {
         String target = host + ":" + port;
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        stub = AdminServiceGrpc.newBlockingStub(channel);
+        this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        this.stub = AdminServiceGrpc.newBlockingStub(channel);
     }
 
     public void activate() {
@@ -76,5 +77,9 @@ public class AdminService {
         }
 
         return;
+    }
+
+    public void shutdown() {
+        channel.shutdownNow();
     }
 }

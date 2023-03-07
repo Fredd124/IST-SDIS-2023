@@ -52,6 +52,7 @@ public class CommandParser {
                     break;
 
                 case EXIT:
+                    this.shutdown();
                     exit = true;
                     break;
 
@@ -111,6 +112,10 @@ public class CommandParser {
                 "- getLedgerState <server>\n" +
                 "- gossip <server>\n" +
                 "- exit\n");
+    }
+
+    private void shutdown() {
+        adminService.shutdown();
     }
 
 }
