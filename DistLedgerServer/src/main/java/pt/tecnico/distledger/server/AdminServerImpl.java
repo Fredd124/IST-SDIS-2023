@@ -15,6 +15,7 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.tecnico.distledger.server.domain.operation.Converter;
 
+import java.io.Console;
 import java.util.ArrayList;
 
 import io.grpc.stub.StreamObserver;
@@ -51,9 +52,11 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void getLedgerState(getLedgerStateRequest request, StreamObserver<getLedgerStateResponse> responseObserver) {
         ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
+        System.out.println(state.getLedgerState().size());
         for (Operation op: state.getLedgerState()) {
             Converter converter = new Converter(op);
             DistLedgerCommonDefinitions.Operation operation = converter.getMessageOp();
+            System.out.println(operation);
             ledgerState.add(operation);
         }
         DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState.newBuilder()

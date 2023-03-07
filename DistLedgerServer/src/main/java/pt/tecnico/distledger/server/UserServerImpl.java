@@ -29,7 +29,6 @@ public class UserServerImpl extends UserServiceImplBase{
 
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
-        //TODO : add logic to this operation
         String userId = request.getUserId();
 
         //check if userId exists

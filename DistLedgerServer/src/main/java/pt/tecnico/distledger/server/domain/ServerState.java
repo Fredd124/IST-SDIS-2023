@@ -48,14 +48,14 @@ public class ServerState {
         return accountMap.containsKey(userId);
     }
 
-    public void createAccount(String userId, int initialBalance) {
+    public void createAccount(String userId, int initialBalance) { // broker
         accountMap.put(userId, initialBalance);
         CreateOp createOp = new CreateOp(userId);
         ledger.add(createOp);
     }
 
     public void createAccount(String userId) {
-        createAccount(userId, 0);
+        accountMap.put(userId, 0);
         CreateOp createOp = new CreateOp(userId);
         ledger.add(createOp);
     }
