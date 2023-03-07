@@ -11,7 +11,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceImplBase;
-import pt.tecnico.distledger.server.domain.ErrorMessage;
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
@@ -129,7 +128,7 @@ public class UserServerImpl extends UserServiceImplBase {
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
-        state.debugPrint(String.format("Received transfer request from %s to %s, with amout of %d .", fromUserId, toUserId, valuex\));
+        state.debugPrint(String.format("Received transfer request from %s to %s, with amout of %d .", fromUserId, toUserId, value));
         if (!state.getActive()) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));

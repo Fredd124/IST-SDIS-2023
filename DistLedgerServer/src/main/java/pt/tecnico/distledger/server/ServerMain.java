@@ -24,7 +24,15 @@ public class ServerMain {
 		}
 
 		final int port = Integer.parseInt(args[0]);
-        final boolean debug = args.length > 2 ? true: false;
+        boolean debug = false;
+        for (int i = 2; i < args.length; i++) {
+            if (args[i].equals("-debug")) {
+                debug = true;
+            }
+            else {
+                System.err.println(String.format("Invalid argument : %s .", args[i]));
+            }
+        }
         ServerState state = new ServerState(debug);
         final BindableService adminImpl = new AdminServerImpl(state);
         final BindableService userImpl = new UserServerImpl(state);

@@ -14,7 +14,6 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.tecnico.distledger.server.domain.operation.Converter;
-import pt.tecnico.distledger.server.domain.ErrorMessage;
 
 import java.util.ArrayList;
 import io.grpc.stub.StreamObserver;
@@ -32,13 +31,17 @@ public class AdminServerImpl extends AdminServiceImplBase {
     public void activate(ActivateRequest request,
             StreamObserver<ActivateResponse> responseObserver) {
 
+        state.debugPrint("Received activate request from admin.");
         if (state.getActive()) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.SERVER_ALREADY_ACTIVE));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(ErrorMessage.SERVER_ALREADY_ACTIVE.label)
                     .asRuntimeException());
         }
         else {
             state.activate();
+            state.debugPrint(String.format("Activated server ."));
             ActivateResponse response = ActivateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -49,12 +52,16 @@ public class AdminServerImpl extends AdminServiceImplBase {
     public void deactivate(DeactivateRequest request,
             StreamObserver<DeactivateResponse> responseObserver) {
 
-        if (state.getActive() == false) {
+        state.debugPrint("Received deactivate request from admin.");
+        if (! state.getActive()) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.SERVER_NOT_ACTIVE));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
                     .asRuntimeException());
         }
         state.deactivate();
+        state.debugPrint(String.format("Deactivated server ."));
         DeactivateResponse response = DeactivateResponse.newBuilder().build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
@@ -69,6 +76,8 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void getLedgerState(getLedgerStateRequest request,
             StreamObserver<getLedgerStateResponse> responseObserver) {
+        
+        state.debugPrint("Received get ledger state request from admin.");
         ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
         System.out.println(state.getLedgerState().size());
         for (Operation op : state.getLedgerState()) {
@@ -79,6 +88,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
         DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState
                 .newBuilder().addAllLedger(ledgerState).build();
 
+        state.debugPrint(String.format("Got ledger state ."));
         getLedgerStateResponse response = getLedgerStateResponse.newBuilder()
                 .setLedgerState(ledgerStateGrpc).build();
         responseObserver.onNext(response);
