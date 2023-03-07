@@ -18,33 +18,39 @@ import java.util.ArrayList;
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 
-
 public class AdminServerImpl extends AdminServiceImplBase {
-    
+
     ServerState state;
 
     public AdminServerImpl(ServerState state) {
         this.state = state;
     }
-    
+
     @Override
-    public void activate(ActivateRequest request, StreamObserver<ActivateResponse> responseObserver) {
+    public void activate(ActivateRequest request,
+            StreamObserver<ActivateResponse> responseObserver) {
 
         if (state.getActive() == true) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already active").asRuntimeException());
-        } else {
-        state.activate();
-        ActivateResponse response = ActivateResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+            responseObserver.onError(
+                    INVALID_ARGUMENT.withDescription("Server is already active")
+                            .asRuntimeException());
+        }
+        else {
+            state.activate();
+            ActivateResponse response = ActivateResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
     }
 
     @Override
-    public void deactivate(DeactivateRequest request, StreamObserver<DeactivateResponse> responseObserver) {
+    public void deactivate(DeactivateRequest request,
+            StreamObserver<DeactivateResponse> responseObserver) {
 
         if (state.getActive() == false) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already deactivated").asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription("Server is already deactivated")
+                    .asRuntimeException());
         }
         state.deactivate();
         DeactivateResponse response = DeactivateResponse.newBuilder().build();
@@ -53,25 +59,27 @@ public class AdminServerImpl extends AdminServiceImplBase {
     }
 
     @Override
-    public void gossip(GossipRequest request, StreamObserver<GossipResponse> responseObserver) {
+    public void gossip(GossipRequest request,
+            StreamObserver<GossipResponse> responseObserver) {
         // Only for 3rd delivery
     }
 
     @Override
-    public void getLedgerState(getLedgerStateRequest request, StreamObserver<getLedgerStateResponse> responseObserver) {
-        ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
+    public void getLedgerState(getLedgerStateRequest request,
+            StreamObserver<getLedgerStateResponse> responseObserver) {
+        ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = 
+            new ArrayList<DistLedgerCommonDefinitions.Operation>();
         System.out.println(state.getLedgerState().size());
-        for (Operation op: state.getLedgerState()) {
-            Converter converter = new Converter(op);
-            DistLedgerCommonDefinitions.Operation operation = converter.getMessageOp();
-            System.out.println(operation);
+        for (Operation op : state.getLedgerState()) {
+            DistLedgerCommonDefinitions.Operation operation = Converter
+                    .convert(op);
             ledgerState.add(operation);
         }
-        DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState.newBuilder()
-                                                                    .addAllLedger(ledgerState).build();
-        
+        DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState
+                .newBuilder().addAllLedger(ledgerState).build();
+
         getLedgerStateResponse response = getLedgerStateResponse.newBuilder()
-                                            .setLedgerState(ledgerStateGrpc).build();
+                .setLedgerState(ledgerStateGrpc).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
