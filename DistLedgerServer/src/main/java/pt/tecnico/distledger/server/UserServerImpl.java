@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.ErrorMessage;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
@@ -29,20 +30,19 @@ public class UserServerImpl extends UserServiceImplBase {
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received get balance request from userId : %s .", userId));
-        if (state.getActive() == false) {
+        if (!state.getActive()) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("Server is not active")
-                            .asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
+                    .asRuntimeException());
         }
-        // check if userId exists
         else if (!state.containsUser(userId)) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.USER_DOES_NOT_EXIST));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("User does not exist")
-                            .asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.USER_DOES_NOT_EXIST.label)
+                    .asRuntimeException());
         }
         else {
             int balance = state.getBalance(userId);
@@ -61,20 +61,19 @@ public class UserServerImpl extends UserServiceImplBase {
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received create account request from userId : %s .", userId));
-        if (state.getActive() == false) {
+        if (!state.getActive()) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("Server is not active")
-                            .asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
+                    .asRuntimeException());
         }
-        // check if userId exists
         else if (state.containsUser(userId)) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.USER_ALREADY_EXISTS));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("User already exists")
-                            .asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.USER_ALREADY_EXISTS.label)
+                    .asRuntimeException());
         }
         else {
             state.createAccount(userId);
@@ -92,21 +91,26 @@ public class UserServerImpl extends UserServiceImplBase {
             StreamObserver<DeleteAccountResponse> responseObserver) {
         String userId = request.getUserId();
         state.debugPrint(String.format(
-                "Received delete account request from userId : %s .", userId));
-        if (state.getActive() == false) {
+            "Received delete account request from userId : %s .", userId));
+        if (!state.getActive()) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("Server is not active")
-                            .asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
+                    .asRuntimeException());
         }
-        // check if userId exists
+        else if (userId == "broker") {
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(
+                            ErrorMessage.BROKER_CAN_NOT_BE_DELETED.label)
+                    .asRuntimeException());
+        }
         else if (!state.containsUser(userId)) {
             state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.USER_DOES_NOT_EXIST));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("User does not exist")
-                            .asRuntimeException());
+                    ErrorMessage.SERVER_NOT_ACTIVE));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.USER_DOES_NOT_EXIST.label)
+                    .asRuntimeException());
         }
         else {
             state.deleteAccount(userId);
@@ -126,35 +130,39 @@ public class UserServerImpl extends UserServiceImplBase {
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
 
-        if (state.getActive() == false) {
+        if (!state.getActive()) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("Server is not active")
-                            .asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
+                    .asRuntimeException());
         }
-        // check if fromUserId exists
         else if (!state.containsUser(fromUserId)) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SOURCE_USER_DOES_NOT_EXIST));
             responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription("Origin user does not exist")
+                    .withDescription(
+                            ErrorMessage.SOURCE_USER_DOES_NOT_EXIST.label)
                     .asRuntimeException());
         }
-        // check if toUserId exists
         else if (!state.containsUser(toUserId)) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.DESTINATION_USER_DOES_NOT_EXIST));
             responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription("Destination user does not exist")
+                    .withDescription(
+                            ErrorMessage.DESTINATION_USER_DOES_NOT_EXIST.label)
                     .asRuntimeException());
         }
-        // check if fromUserId has enough balance
         else if (state.getBalance(fromUserId) < value) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.INVALID_BALANCE_AMOUNT));
-            responseObserver.onError(INVALID_ARGUMENT.withDescription(
-                    "The owner of the account does not have enough balance")
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.INVALID_USER_BALANCE.label)
+                    .asRuntimeException());
+        }
+        else if (value <= 0) {
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.INVALID_BALANCE_AMOUNT.label)
                     .asRuntimeException());
         }
         else {

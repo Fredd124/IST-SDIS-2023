@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.ErrorMessage;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
@@ -30,11 +31,11 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void activate(ActivateRequest request,
             StreamObserver<ActivateResponse> responseObserver) {
-                
-        if (state.getActive() == true) {
-            responseObserver.onError(
-                    INVALID_ARGUMENT.withDescription("Server is already active")
-                            .asRuntimeException());
+
+        if (state.getActive()) {
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.SERVER_ALREADY_ACTIVE.label)
+                    .asRuntimeException());
         }
         else {
             state.activate();
@@ -50,7 +51,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
 
         if (state.getActive() == false) {
             responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription("Server is already deactivated")
+                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
                     .asRuntimeException());
         }
         state.deactivate();
@@ -68,8 +69,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void getLedgerState(getLedgerStateRequest request,
             StreamObserver<getLedgerStateResponse> responseObserver) {
-        ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = 
-            new ArrayList<DistLedgerCommonDefinitions.Operation>();
+        ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
         System.out.println(state.getLedgerState().size());
         for (Operation op : state.getLedgerState()) {
             DistLedgerCommonDefinitions.Operation operation = Converter
