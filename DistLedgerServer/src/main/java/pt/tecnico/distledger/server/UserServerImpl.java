@@ -129,7 +129,7 @@ public class UserServerImpl extends UserServiceImplBase {
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
-
+        state.debugPrint(String.format("Received transfer request from %s to %s, with amout of %d .", fromUserId, toUserId, valuex\));
         if (!state.getActive()) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));
@@ -155,12 +155,14 @@ public class UserServerImpl extends UserServiceImplBase {
         }
         else if (state.getBalance(fromUserId) < value) {
             state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.INVALID_BALANCE_AMOUNT));
+                    ErrorMessage.INVALID_USER_BALANCE));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(ErrorMessage.INVALID_USER_BALANCE.label)
                     .asRuntimeException());
         }
         else if (value <= 0) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.INVALID_BALANCE_AMOUNT));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(ErrorMessage.INVALID_BALANCE_AMOUNT.label)
                     .asRuntimeException());

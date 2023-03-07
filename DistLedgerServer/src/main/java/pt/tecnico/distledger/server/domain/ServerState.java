@@ -39,7 +39,7 @@ public class ServerState {
     }
 
     public void debugPrint(String message) {
-        if (debug) System.out.println(message);
+        if (debug) System.err.println(message);
     }
 
     public int getBalance(String userId) {
