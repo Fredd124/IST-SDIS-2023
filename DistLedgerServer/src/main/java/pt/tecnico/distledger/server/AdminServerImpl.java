@@ -1,6 +1,8 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.ErrorMessage;
+import pt.tecnico.distledger.server.domain.exceptions.AlreadyActiveException;
+import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
@@ -32,19 +34,19 @@ public class AdminServerImpl extends AdminServiceImplBase {
             StreamObserver<ActivateResponse> responseObserver) {
 
         state.debugPrint("Received activate request from admin.");
-        if (state.getActive()) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_ALREADY_ACTIVE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_ALREADY_ACTIVE.label)
-                    .asRuntimeException());
-        }
-        else {
+        try {
             state.activate();
             state.debugPrint(String.format("Activated server ."));
             ActivateResponse response = ActivateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        } 
+        catch (AlreadyActiveException e) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.SERVER_ALREADY_ACTIVE));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.SERVER_ALREADY_ACTIVE.label)
+                    .asRuntimeException());
         }
     }
 
@@ -53,18 +55,20 @@ public class AdminServerImpl extends AdminServiceImplBase {
             StreamObserver<DeactivateResponse> responseObserver) {
 
         state.debugPrint("Received deactivate request from admin.");
-        if (! state.getActive()) {
+        try {
+            state.deactivate();
+            state.debugPrint(String.format("Deactivated server ."));
+            DeactivateResponse response = DeactivateResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } 
+        catch (NotActiveException e) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SERVER_NOT_ACTIVE));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
                     .asRuntimeException());
         }
-        state.deactivate();
-        state.debugPrint(String.format("Deactivated server ."));
-        DeactivateResponse response = DeactivateResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 
     @Override
