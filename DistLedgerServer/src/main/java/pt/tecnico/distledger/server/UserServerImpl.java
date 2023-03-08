@@ -99,6 +99,8 @@ public class UserServerImpl extends UserServiceImplBase {
                     .asRuntimeException());
         }
         else if (userId == "broker") {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.BROKER_CAN_NOT_BE_DELETED));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(
                             ErrorMessage.BROKER_CAN_NOT_BE_DELETED.label)
@@ -106,9 +108,16 @@ public class UserServerImpl extends UserServiceImplBase {
         }
         else if (!state.containsUser(userId)) {
             state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_NOT_ACTIVE));
+                    ErrorMessage.USER_DOES_NOT_EXIST));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(ErrorMessage.USER_DOES_NOT_EXIST.label)
+                    .asRuntimeException());
+        }
+        else if (state.getBalance(userId) != 0) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.BALANCE_NOT_ZERO));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(ErrorMessage.BALANCE_NOT_ZERO.label)
                     .asRuntimeException());
         }
         else {
@@ -150,6 +159,14 @@ public class UserServerImpl extends UserServiceImplBase {
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(
                             ErrorMessage.DESTINATION_USER_DOES_NOT_EXIST.label)
+                    .asRuntimeException());
+        }
+        else if (fromUserId == toUserId) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    ErrorMessage.SOURCE_EQUALS_DESTINATION));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(
+                            ErrorMessage.SOURCE_EQUALS_DESTINATION.label)
                     .asRuntimeException());
         }
         else if (state.getBalance(fromUserId) < value) {
