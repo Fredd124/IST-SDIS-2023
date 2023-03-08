@@ -98,7 +98,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
                     .asRuntimeException());
         }
-        else if (userId == "broker") {
+        else if (userId.equals("broker")) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.BROKER_CAN_NOT_BE_DELETED));
             responseObserver.onError(INVALID_ARGUMENT
@@ -161,7 +161,7 @@ public class UserServerImpl extends UserServiceImplBase {
                             ErrorMessage.DESTINATION_USER_DOES_NOT_EXIST.label)
                     .asRuntimeException());
         }
-        else if (fromUserId == toUserId) {
+        else if (fromUserId.equals(toUserId)) {
             state.debugPrint(String.format("Threw exception : %s .",
                     ErrorMessage.SOURCE_EQUALS_DESTINATION));
             responseObserver.onError(INVALID_ARGUMENT
