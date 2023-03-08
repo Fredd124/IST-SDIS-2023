@@ -79,7 +79,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
         
         state.debugPrint("Received get ledger state request from admin.");
         ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
-        System.out.println(state.getLedgerState().size());
         for (Operation op : state.getLedgerState()) {
             DistLedgerCommonDefinitions.Operation operation = Converter
                     .convert(op);
