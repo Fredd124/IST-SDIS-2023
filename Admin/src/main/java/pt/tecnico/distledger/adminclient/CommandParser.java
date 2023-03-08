@@ -63,6 +63,8 @@ public class CommandParser {
                     break;
 
                 default:
+                    adminService.debugPrint("No command found, printing usage");
+                    this.printUsage();
                     break;
             }
 
