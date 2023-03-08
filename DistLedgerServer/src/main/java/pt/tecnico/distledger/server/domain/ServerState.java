@@ -69,8 +69,11 @@ public class ServerState {
         accountMap.put("broker", 1000);
     }
 
-    public void createAccount(String userId) throws UserAlreadyExistsEception {
-        if (this.containsUser(userId)) {
+    public void createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
+        if (this.active == false) {
+            throw new NotActiveException();
+        } 
+        else if (this.containsUser(userId)) {
             throw new UserAlreadyExistsEception();
         }
         accountMap.put(userId, 0);
@@ -78,8 +81,12 @@ public class ServerState {
         ledger.add(createOp);
     }
 
-    public void deleteAccount(String userId) throws BrokerCantBeDeletedException, BalanceNotZeroException, UserDoesNotExistException {
-        if (userId.equals("broker")) {
+    public void deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
+            BalanceNotZeroException, UserDoesNotExistException {
+        if (this.active == false) {
+            throw new NotActiveException();
+        } 
+        else if (userId.equals("broker")) {
             throw new BrokerCantBeDeletedException();
         }
         else if (!this.containsUser(userId)) {
@@ -93,10 +100,14 @@ public class ServerState {
         ledger.add(deleteOp);
     }
 
-    public void transfer(String fromAccount, String toAccount, int amount) throws SourceUserDoesNotExistException, 
-            DestinationUserDoesNotExistException, SourceEqualsDestinationUserException,
-                InvalidUserBalanceException, InvalidBalanceAmountException, UserDoesNotExistException {
-        if (!this.containsUser(fromAccount)) {
+    public void transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
+            SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
+                SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
+                    UserDoesNotExistException {
+        if (this.active == false) {
+            throw new NotActiveException();
+        } 
+        else if (!this.containsUser(fromAccount)) {
             throw new SourceUserDoesNotExistException();
         }
         else if (!this.containsUser(toAccount)) {
