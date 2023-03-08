@@ -32,7 +32,7 @@ public class AdminService {
             System.out.println("OK");
             debugPrint("Server activated");
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+            System.out.println(e.getStatus().getDescription());
         }
     }
 
@@ -44,7 +44,7 @@ public class AdminService {
             System.out.println("OK");
             debugPrint("Server deactivated");
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+            System.out.println(e.getStatus().getDescription());
         }
     }
 
@@ -56,7 +56,7 @@ public class AdminService {
             System.out.println("OK");
             debugPrint("Server gossiped");
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+            System.out.println(e.getStatus().getDescription());
         }
     }
 
@@ -80,7 +80,7 @@ public class AdminService {
             System.out.println("OK");
             System.out.println(res);
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+            System.out.println(e.getStatus().getDescription());
         }
 
         return;
