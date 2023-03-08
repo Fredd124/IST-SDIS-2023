@@ -1,6 +1,5 @@
 package pt.tecnico.distledger.server;
 
-import pt.tecnico.distledger.server.domain.ErrorMessage;
 import pt.tecnico.distledger.server.domain.exceptions.AlreadyActiveException;
 import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
 import pt.tecnico.distledger.server.domain.ServerState;
@@ -20,6 +19,7 @@ import pt.tecnico.distledger.server.domain.operation.Converter;
 import java.util.ArrayList;
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
+import static io.grpc.Status.UNAVAILABLE;
 
 public class AdminServerImpl extends AdminServiceImplBase {
 
@@ -43,9 +43,9 @@ public class AdminServerImpl extends AdminServiceImplBase {
         } 
         catch (AlreadyActiveException e) {
             state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_ALREADY_ACTIVE));
+                    e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_ALREADY_ACTIVE.label)
+                    .withDescription(e.getMessage())
                     .asRuntimeException());
         }
     }
@@ -64,9 +64,9 @@ public class AdminServerImpl extends AdminServiceImplBase {
         } 
         catch (NotActiveException e) {
             state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
+                    e.getMessage()));
+            responseObserver.onError(UNAVAILABLE
+                    .withDescription(e.getMessage())
                     .asRuntimeException());
         }
     }
