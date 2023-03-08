@@ -49,8 +49,11 @@ public class ServerState {
         if (debug) System.err.println(message);
     }
 
-    public int getBalance(String userId) throws UserDoesNotExistException {
-        if (!this.containsUser(userId)) {
+    public int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
+        if (this.active == false) {
+            throw new NotActiveException();
+        } 
+        else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
         return accountMap.get(userId);
