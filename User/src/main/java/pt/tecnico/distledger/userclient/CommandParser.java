@@ -64,6 +64,7 @@ public class CommandParser {
                         break;
 
                     default:
+                        this.printUsage();
                         break;
                 }
             }
