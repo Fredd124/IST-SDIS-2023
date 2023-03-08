@@ -40,13 +40,12 @@ public class AdminServerImpl extends AdminServiceImplBase {
             ActivateResponse response = ActivateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } 
+        }
         catch (AlreadyActiveException e) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    e.getMessage()));
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(e.getMessage())
-                    .asRuntimeException());
+                    .withDescription(e.getMessage()).asRuntimeException());
         }
     }
 
@@ -58,15 +57,15 @@ public class AdminServerImpl extends AdminServiceImplBase {
         try {
             state.deactivate();
             state.debugPrint(String.format("Deactivated server ."));
-            DeactivateResponse response = DeactivateResponse.newBuilder().build();
+            DeactivateResponse response = DeactivateResponse.newBuilder()
+                    .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } 
+        }
         catch (NotActiveException e) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    e.getMessage()));
-            responseObserver.onError(UNAVAILABLE
-                    .withDescription(e.getMessage())
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
                     .asRuntimeException());
         }
     }
@@ -80,7 +79,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void getLedgerState(getLedgerStateRequest request,
             StreamObserver<getLedgerStateResponse> responseObserver) {
-        
+
         state.debugPrint("Received get ledger state request from admin.");
         ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
         for (Operation op : state.getLedgerState()) {
