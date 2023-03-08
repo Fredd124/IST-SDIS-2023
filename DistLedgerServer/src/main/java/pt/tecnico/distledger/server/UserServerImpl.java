@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server;
 
-import pt.tecnico.distledger.server.domain.ErrorMessage;
+import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
+import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
@@ -14,6 +15,7 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceIm
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
+import static io.grpc.Status.UNAVAILABLE;
 
 public class UserServerImpl extends UserServiceImplBase {
 
@@ -29,21 +31,7 @@ public class UserServerImpl extends UserServiceImplBase {
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received get balance request from userId : %s .", userId));
-        if (!state.getActive()) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
-                    .asRuntimeException());
-        }
-        else if (!state.containsUser(userId)) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.USER_DOES_NOT_EXIST));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.USER_DOES_NOT_EXIST.label)
-                    .asRuntimeException());
-        }
-        else {
+        try {
             int balance = state.getBalance(userId);
             state.debugPrint(String.format(
                     "Returning balance for user %s : %d .", userId, balance));
@@ -51,6 +39,18 @@ public class UserServerImpl extends UserServiceImplBase {
                     .setValue(balance).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        }
+        catch (NotActiveException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (ServerStateException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(e.getMessage()).asRuntimeException());
         }
     }
 
@@ -60,21 +60,7 @@ public class UserServerImpl extends UserServiceImplBase {
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received create account request from userId : %s .", userId));
-        if (!state.getActive()) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
-                    .asRuntimeException());
-        }
-        else if (state.containsUser(userId)) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.USER_ALREADY_EXISTS));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.USER_ALREADY_EXISTS.label)
-                    .asRuntimeException());
-        }
-        else {
+        try {
             state.createAccount(userId);
             state.debugPrint(
                     String.format("Created account for user %s .", userId));
@@ -83,6 +69,18 @@ public class UserServerImpl extends UserServiceImplBase {
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
+        catch (NotActiveException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (ServerStateException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(e.getMessage()).asRuntimeException());
+        }
     }
 
     @Override
@@ -90,37 +88,8 @@ public class UserServerImpl extends UserServiceImplBase {
             StreamObserver<DeleteAccountResponse> responseObserver) {
         String userId = request.getUserId();
         state.debugPrint(String.format(
-            "Received delete account request from userId : %s .", userId));
-        if (!state.getActive()) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
-                    .asRuntimeException());
-        }
-        else if (userId.equals("broker")) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.BROKER_CAN_NOT_BE_DELETED));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(
-                            ErrorMessage.BROKER_CAN_NOT_BE_DELETED.label)
-                    .asRuntimeException());
-        }
-        else if (!state.containsUser(userId)) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.USER_DOES_NOT_EXIST));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.USER_DOES_NOT_EXIST.label)
-                    .asRuntimeException());
-        }
-        else if (state.getBalance(userId) != 0) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.BALANCE_NOT_ZERO));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.BALANCE_NOT_ZERO.label)
-                    .asRuntimeException());
-        }
-        else {
+                "Received delete account request from userId : %s .", userId));
+        try {
             state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Deleted account for user %s .", userId));
@@ -128,6 +97,20 @@ public class UserServerImpl extends UserServiceImplBase {
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        }
+        catch (NotActiveException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (ServerStateException e) {
+            state.debugPrint(String.format("Threw exception : %s .",
+                    e.getMessage()));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(
+                            e.getMessage())
+                    .asRuntimeException());
         }
     }
 
@@ -137,53 +120,10 @@ public class UserServerImpl extends UserServiceImplBase {
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
-        state.debugPrint(String.format("Received transfer request from %s to %s, with amout of %d .", fromUserId, toUserId, value));
-        if (!state.getActive()) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SERVER_NOT_ACTIVE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.SERVER_NOT_ACTIVE.label)
-                    .asRuntimeException());
-        }
-        else if (!state.containsUser(fromUserId)) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SOURCE_USER_DOES_NOT_EXIST));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(
-                            ErrorMessage.SOURCE_USER_DOES_NOT_EXIST.label)
-                    .asRuntimeException());
-        }
-        else if (!state.containsUser(toUserId)) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.DESTINATION_USER_DOES_NOT_EXIST));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(
-                            ErrorMessage.DESTINATION_USER_DOES_NOT_EXIST.label)
-                    .asRuntimeException());
-        }
-        else if (fromUserId.equals(toUserId)) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.SOURCE_EQUALS_DESTINATION));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(
-                            ErrorMessage.SOURCE_EQUALS_DESTINATION.label)
-                    .asRuntimeException());
-        }
-        else if (state.getBalance(fromUserId) < value) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.INVALID_USER_BALANCE));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.INVALID_USER_BALANCE.label)
-                    .asRuntimeException());
-        }
-        else if (value <= 0) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    ErrorMessage.INVALID_BALANCE_AMOUNT));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(ErrorMessage.INVALID_BALANCE_AMOUNT.label)
-                    .asRuntimeException());
-        }
-        else {
+        state.debugPrint(String.format(
+                "Received transfer request from %s to %s, with amout of %d .",
+                fromUserId, toUserId, value));
+        try {
             state.transfer(fromUserId, toUserId, value);
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
@@ -192,6 +132,18 @@ public class UserServerImpl extends UserServiceImplBase {
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        }
+        catch (NotActiveException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (ServerStateException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(e.getMessage()).asRuntimeException());
         }
     }
 
