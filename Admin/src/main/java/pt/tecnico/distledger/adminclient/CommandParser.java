@@ -32,26 +32,32 @@ public class CommandParser {
 
             switch (cmd) {
                 case ACTIVATE:
+                    adminService.debugPrint("Received activate command from input");
                     this.activate(line);
                     break;
 
                 case DEACTIVATE:
+                    adminService.debugPrint("Received deactivate command from input");
                     this.deactivate(line);
                     break;
 
                 case GET_LEDGER_STATE:
+                    adminService.debugPrint("Received getLedgerState command from input");
                     this.dump(line);
                     break;
 
                 case GOSSIP:
+                    adminService.debugPrint("Received gossip command from input");
                     this.gossip(line);
                     break;
 
                 case HELP:
+                    adminService.debugPrint("Received help command from input");
                     this.printUsage();
                     break;
 
                 case EXIT:
+                    adminService.debugPrint("Received exit command from input");
                     this.shutdown();
                     exit = true;
                     break;
@@ -72,6 +78,7 @@ public class CommandParser {
         }
         String server = split[1];
 
+        adminService.debugPrint("Calling adminService adctivate method");
         adminService.activate();
     }
 
@@ -84,6 +91,7 @@ public class CommandParser {
         }
         String server = split[1];
 
+        adminService.debugPrint("Calling adminService deactivate method");
         adminService.deactivate();
     }
 
@@ -96,6 +104,7 @@ public class CommandParser {
         }
         String server = split[1];
 
+        adminService.debugPrint("Calling adminService getLedgerState method");
         adminService.getLedgerState();
     }
 
@@ -115,6 +124,7 @@ public class CommandParser {
     }
 
     private void shutdown() {
+        adminService.debugPrint("Calling adminService shutdown method");
         adminService.shutdown();
     }
 

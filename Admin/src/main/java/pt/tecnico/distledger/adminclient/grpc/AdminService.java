@@ -16,9 +16,10 @@ public class AdminService {
 
     private AdminServiceGrpc.AdminServiceBlockingStub stub;
     private ManagedChannel channel;
+    private boolean debug;
 
-    public AdminService(String host, int port) {
-        String target = host + ":" + port;
+    public AdminService(String target, boolean debug) {
+        this.debug = debug;
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.stub = AdminServiceGrpc.newBlockingStub(channel);
     }
@@ -26,9 +27,10 @@ public class AdminService {
     public void activate() {
         try {
             AdminDistLedger.ActivateRequest request = AdminDistLedger.ActivateRequest.newBuilder().build();
+            debugPrint("Sending activate request to server...");
             stub.activate(request);
             System.out.println("OK");
-            System.out.println("Server activated");
+            debugPrint("Server activated");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + e.getStatus().getDescription());
         }
@@ -37,9 +39,10 @@ public class AdminService {
     public void deactivate() {
         try {
             AdminDistLedger.DeactivateRequest request = AdminDistLedger.DeactivateRequest.newBuilder().build();
+            debugPrint("Sending deactivate request to server...");
             stub.deactivate(request);
             System.out.println("OK");
-            System.out.println("Server deactivated");
+            debugPrint("Server deactivated");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + e.getStatus().getDescription());
         }
@@ -48,9 +51,10 @@ public class AdminService {
     public void gossip() {
         try {
             AdminDistLedger.GossipRequest request = AdminDistLedger.GossipRequest.newBuilder().build();
+            debugPrint("Sending gossip request to server...");
             stub.gossip(request);
             System.out.println("OK");
-            System.out.println("Gossip done");
+            debugPrint("Server gossiped");
         } catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + e.getStatus().getDescription());
         }
@@ -60,7 +64,9 @@ public class AdminService {
         try {
             String res = "";
             AdminDistLedger.getLedgerStateRequest request = AdminDistLedger.getLedgerStateRequest.newBuilder().build();
+            debugPrint("Sending getLedgerState request to server...");
             AdminDistLedger.getLedgerStateResponse response = stub.getLedgerState(request);
+            debugPrint("Server responded with ledger state");
 
             res += "LedgerState {\n";
             
@@ -69,6 +75,7 @@ public class AdminService {
             }
 
             res += "}";
+            debugPrint("LedgerState string to print created");
 
             System.out.println("OK");
             System.out.println(res);
@@ -80,6 +87,14 @@ public class AdminService {
     }
 
     public void shutdown() {
+        debugPrint("Shutting down channel...");
         channel.shutdownNow();
+        debugPrint("Channel shut down");
+    }
+
+    public void debugPrint(String message) {
+        if (debug) {
+            System.out.println(message);
+        }
     }
 }
