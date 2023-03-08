@@ -66,7 +66,7 @@ public class UserService {
             debugPrint("Send get balance request to server.");
             response = stub.balance(request);
             System.out.println("OK");
-            System.out.println(response.getValue());
+            System.out.println(response);
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
