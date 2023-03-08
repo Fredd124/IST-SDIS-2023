@@ -3,7 +3,6 @@ package pt.tecnico.distledger.server.domain;
 import pt.tecnico.distledger.server.domain.operation.*;
 import pt.tecnico.distledger.server.domain.exceptions.*;
 
-import java.io.NotActiveException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
