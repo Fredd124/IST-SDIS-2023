@@ -31,14 +31,14 @@ public class ServerState {
         this.active = active;
     }
 
-    public void activate() throws AlreadyActiveException {
+    public synchronized void activate() throws AlreadyActiveException {
         if (this.active) {
             throw new AlreadyActiveException();
         }
         setActive(true);
     }
 
-    public void deactivate() throws NotActiveException {
+    public synchronized void deactivate() throws NotActiveException {
         if (!this.active) {
             throw new NotActiveException();
         }
@@ -67,11 +67,11 @@ public class ServerState {
         return accountMap.containsKey(userId);
     }
 
-    public void createBroker() { // broker
+    public synchronized void createBroker() { // broker
         accountMap.put("broker", 1000);
     }
 
-    public void createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
+    public synchronized void createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
         } 
@@ -83,7 +83,7 @@ public class ServerState {
         ledger.add(createOp);
     }
 
-    public void deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
+    public synchronized void deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
             BalanceNotZeroException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
@@ -102,7 +102,7 @@ public class ServerState {
         ledger.add(deleteOp);
     }
 
-    public void transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
+    public synchronized void transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
             SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
                 SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
                     UserDoesNotExistException {
