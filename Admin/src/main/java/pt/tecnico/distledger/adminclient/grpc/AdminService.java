@@ -3,7 +3,7 @@ package pt.tecnico.distledger.adminclient.grpc;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
-
+import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.LedgerState;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -62,24 +62,14 @@ public class AdminService {
 
     public void getLedgerState() {
         try {
-            String res = "";
+
             AdminDistLedger.getLedgerStateRequest request = AdminDistLedger.getLedgerStateRequest.newBuilder().build();
             debugPrint("Sending getLedgerState request to server...");
             AdminDistLedger.getLedgerStateResponse response = stub.getLedgerState(request);
             debugPrint("Server responded with ledger state");
-
-            res += "LedgerState {\n";
-            
-            for (DistLedgerCommonDefinitions.Operation op : response.getLedgerState().getLedgerList()) {
-                res += "\tledger {\n\t\t" + op.toString().
-                    replace("\n", "\n\t\t").strip() + "\n\t}\n";
-            }
-
-            res += "}";
-            debugPrint("LedgerState string to print created");
-
             System.out.println("OK");
-            System.out.println(res);
+            System.out.println(response);
+            debugPrint("LedgerState string to print created");
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
