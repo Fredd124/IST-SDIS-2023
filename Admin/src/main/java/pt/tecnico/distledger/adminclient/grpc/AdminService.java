@@ -71,7 +71,8 @@ public class AdminService {
             res += "LedgerState {\n";
             
             for (DistLedgerCommonDefinitions.Operation op : response.getLedgerState().getLedgerList()) {
-                res += op.toString() + "\n";
+                res += "\tledger {\n\t\t" + op.toString().
+                    replace("\n", "\n\t\t").strip() + "\n\t}\n";
             }
 
             res += "}";
