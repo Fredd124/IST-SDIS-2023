@@ -32,14 +32,14 @@ public class ServerState {
     }
 
     public void activate() throws AlreadyActiveException {
-        if (this.active == true) {
+        if (this.active) {
             throw new AlreadyActiveException();
         }
         setActive(true);
     }
 
     public void deactivate() throws NotActiveException {
-        if (this.active == false) {
+        if (!this.active) {
             throw new NotActiveException();
         }
         setActive(false);
@@ -50,7 +50,7 @@ public class ServerState {
     }
 
     public int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
-        if (this.active == false) {
+        if (!this.active) {
             throw new NotActiveException();
         } 
         else if (!this.containsUser(userId)) {
@@ -72,7 +72,7 @@ public class ServerState {
     }
 
     public void createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
-        if (this.active == false) {
+        if (!this.active) {
             throw new NotActiveException();
         } 
         else if (this.containsUser(userId)) {
@@ -85,7 +85,7 @@ public class ServerState {
 
     public void deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
             BalanceNotZeroException, UserDoesNotExistException {
-        if (this.active == false) {
+        if (!this.active) {
             throw new NotActiveException();
         } 
         else if (userId.equals("broker")) {
@@ -94,7 +94,7 @@ public class ServerState {
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
-        else if (this.getBalance(userId) == 0) {
+        else if (this.getBalance(userId) != 0) {
             throw new BalanceNotZeroException();
         }
         accountMap.remove(userId);
@@ -106,7 +106,7 @@ public class ServerState {
             SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
                 SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
                     UserDoesNotExistException {
-        if (this.active == false) {
+        if (!this.active) {
             throw new NotActiveException();
         } 
         else if (!this.containsUser(fromAccount)) {
