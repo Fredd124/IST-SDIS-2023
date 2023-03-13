@@ -7,12 +7,13 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
+import pt.tecnico.distledger.namingserver.domain.ServerState;
+
 public class NamingServer {
 
     public static void main(String[] args) {
 
         final int PORT = 5001;
-        Map<String, ServiceEntry> services = new HashMap<>();
         boolean debug = false;
         /* for (int i = 2; i < args.length; i++) {
             if (args[i].equals("-debug")) {
@@ -23,8 +24,8 @@ public class NamingServer {
             }
         } */
         // Create a new server to listen on port
+        ServerState state = new ServerState();
 		Server server = ServerBuilder.forPort(PORT).build();
-
     }
 
 }

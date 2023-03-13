@@ -1,13 +1,12 @@
 package pt.tecnico.distledger.namingserver.domain;
 
 public class ServerEntry {
-    private String hostPort;
-    private String hostAddress;
+
+    private String host;
     private String qualifier;
 
-    public ServerEntry(String port, String address, String qual) {
-        this.hostPort = port;
-        this.hostAddress = address;
+    public ServerEntry(String addressAndPort, String qual) {
+        this.host = addressAndPort;
         this.qualifier = qual;        
     }
 }
