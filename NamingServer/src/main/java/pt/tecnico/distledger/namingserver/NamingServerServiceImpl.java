@@ -3,8 +3,9 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.Register
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RemovalRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RemovalResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
+import pt.tecnico.distledger.namingserver.domain.exceptions.ServerStateException;
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
@@ -23,23 +24,38 @@ public class NamingServerServiceImpl {
         String serviceName = request.getName();
         String qualifier = request.getQualifier();
         String address = request.getAddress();
-        state.registerService(serviceName, qualifier, address);
-        RegisterResponse response = RegisterResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
-        // TODO : create Exceptions (server ja existe com outro qualificador, mesmo qualificador e address diff
+
+        try {
+            state.registerService(serviceName, qualifier, address);
+            RegisterResponse response = RegisterResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (ServerStateException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        }
     }
 
     public void lookup(LookupRequest request, StreamObserver<LookupResponse> responseObserver) {
         String serviceName = request.getName();
         String qualifier = request.getQualifier();
         state.lookupService(serviceName, qualifier);
-        RegisterResponse response = RegisterResponse.newBuilder().build();
+        LookupResponse response = LookupResponse.newBuilder().build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
-    public void remove(RemovalRequest request, StreamObserver<RemovalResponse> responseObserver) {
+    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+        String serviceName = request.getName();
+        String address = request.getAddress();
+
+        try {
+            state.deleteService(serviceName, address);
+            DeleteResponse response = DeleteResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted(); 
+        } catch (ServerStateException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        }
         
     }
 

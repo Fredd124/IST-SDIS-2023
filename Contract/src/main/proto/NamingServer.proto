@@ -18,16 +18,16 @@ message LookupResponse {
     repeated string servers = 1;
 }
 
-message RemovalRequest {
+message DeleteRequest {
     string name = 1;
     string address = 2;
 }
 
-message RemovalResponse {}
+message DeleteResponse {}
 
 service NamingServerService {
     rpc register (RegisterRequest) returns (RegisterResponse);
     rpc lookup (LookupRequest) returns (LookupResponse);
-    rpc remove (RemovalRequest) returns (RemovalResponse);
+    rpc delete (DeleteRequest) returns (DeleteResponse);
 }
 

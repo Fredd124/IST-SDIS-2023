@@ -33,6 +33,7 @@ public class ServerMain {
                 System.err.println(String.format("Invalid argument : %s .", args[i]));
             }
         }
+        
         ServerState state = new ServerState(debug);
         final BindableService adminImpl = new AdminServerImpl(state);
         final BindableService userImpl = new UserServerImpl(state);
