@@ -1,3 +1,5 @@
+package pt.tecnico.distledger.namingserver;
+
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
