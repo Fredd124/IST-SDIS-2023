@@ -79,7 +79,7 @@ public class CommandParser {
         String server = split[1];
 
         adminService.debugPrint("Calling adminService adctivate method");
-        adminService.activate();
+        adminService.activate(server);
     }
 
     private void deactivate(String line){
@@ -92,7 +92,7 @@ public class CommandParser {
         String server = split[1];
 
         adminService.debugPrint("Calling adminService deactivate method");
-        adminService.deactivate();
+        adminService.deactivate(server);
     }
 
     private void dump(String line){
@@ -105,14 +105,14 @@ public class CommandParser {
         String server = split[1];
 
         adminService.debugPrint("Calling adminService getLedgerState method");
-        adminService.getLedgerState();
+        adminService.getLedgerState(server);
     }
 
     @SuppressWarnings("unused")
     private void gossip(String line){
         /* TODO Phase-3 */
         //System.out.println("TODO: implement gossip command (only for Phase-3)");
-        adminService.gossip();
+        //adminService.gossip();
     }
     private void printUsage() {
         System.out.println("Usage:\n" +

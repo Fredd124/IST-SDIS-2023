@@ -22,7 +22,7 @@
 
 		<mainclass>pt.tecnico.distledger.adminclient.AdminClientMain</mainclass>
 		<server.host>localhost</server.host>
-		<server.port>2001</server.port>
+		<server.port>5001</server.port>
 
 	</properties>
 

@@ -55,7 +55,7 @@ public class NamingServerServiceImpl extends NamingServerServiceImplBase {
             state.deleteService(serviceName, address);
             DeleteResponse response = DeleteResponse.newBuilder().build();
             responseObserver.onNext(response);
-            responseObserver.onCompleted(); 
+            responseObserver.onCompleted();
         } catch (ServerStateException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         }
