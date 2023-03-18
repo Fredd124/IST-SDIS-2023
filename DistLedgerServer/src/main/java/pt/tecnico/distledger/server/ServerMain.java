@@ -50,10 +50,12 @@ public class ServerMain {
         ServerState state = new ServerState(debug);
         final BindableService adminImpl = new AdminServerImpl(state);
         final BindableService userImpl = new UserServerImpl(state);
+        final BindableService crossServerImpl = new CrossServerImpl(state);
         
 
         // Create a new server to listen on port
-		Server server = ServerBuilder.forPort(port).addService(adminImpl).addService(userImpl).build();
+		Server server = ServerBuilder.forPort(port).addService(adminImpl).addService(userImpl)
+        .addService(crossServerImpl).build();
 
         // Start the server
         try {

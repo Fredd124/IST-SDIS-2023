@@ -2,7 +2,14 @@ package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
+import pt.tecnico.distledger.server.domain.operation.Converter;
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
@@ -16,6 +23,9 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceIm
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 public class UserServerImpl extends UserServiceImplBase {
 
@@ -64,6 +74,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.createAccount(userId);
             state.debugPrint(
                     String.format("Created account for user %s .", userId));
+            propagateToSecondary();
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -93,6 +104,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Deleted account for user %s .", userId));
+            propagateToSecondary();
             DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -128,6 +140,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
+            propagateToSecondary();
             TransferToResponse response = TransferToResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -145,6 +158,27 @@ public class UserServerImpl extends UserServiceImplBase {
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(e.getMessage()).asRuntimeException());
         }
+    }
+
+    void propagateToSecondary() {
+        LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
+        LookupResponse response = dnsStub.lookup(request);
+        channel.shutdown();
+        String address = response.getServers(0); // TODO : implement for other cases 
+        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+        DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
+            = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+        DistLedgerCommonDefinitions.LedgerState ledgerState 
+            = DistLedgerCommonDefinitions.LedgerState.newBuilder()
+            .addAllLedger(
+                state.getLedgerState().stream()
+                .map(op -> Converter.convertToGrpc(op)).toList()
+            ).build();
+        PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setState(ledgerState).build();
+        stub.propagateState(propagateRequest);
+
     }
 
 }
