@@ -2,8 +2,6 @@ package pt.tecnico.distledger.adminclient;
 
 import pt.tecnico.distledger.adminclient.grpc.AdminService;
 
-import java.util.ArrayList;
-
 import java.util.Scanner;
 
 public class CommandParser {
