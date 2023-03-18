@@ -1,9 +1,10 @@
 package pt.tecnico.distledger.server.domain.operation;
 
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
+import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
 public class Converter {
-    public static DistLedgerCommonDefinitions.Operation convert(Operation operation){
+    public static DistLedgerCommonDefinitions.Operation convertToGrpc(Operation operation) {
         String type = operation.getType();
         switch (type){
             case ("OP_TRANSFER_TO"):
@@ -21,8 +22,25 @@ public class Converter {
                         .setType(DistLedgerCommonDefinitions.OperationType.OP_DELETE_ACCOUNT)
                         .setUserId(operation.getAccount()).build();
             default:
-                return null;
+                return DistLedgerCommonDefinitions.Operation.newBuilder()
+                .setType(OperationType.OP_UNSPECIFIED).build();
         }
 
+    }
+    public static Operation convertFromGrpc(DistLedgerCommonDefinitions.Operation operation) {
+        DistLedgerCommonDefinitions.OperationType type = operation.getType();
+        switch(type) {
+            case OP_CREATE_ACCOUNT:
+                return new CreateOp(operation.getUserId());
+            case OP_DELETE_ACCOUNT:
+                return new DeleteOp(operation.getUserId());
+            case OP_TRANSFER_TO:
+                return new TransferOp(operation.getUserId(), operation.getDestUserId(), operation.getAmount());
+            case OP_UNSPECIFIED:
+                return null;
+            default:
+                return null;
+        }
+        
     }
 }

@@ -63,6 +63,10 @@ public class ServerState {
         return this.ledger;
     }
 
+    public void setLedgerState(List<Operation> ops) {
+        this.ledger = ops;
+    }
+
     public boolean containsUser(String userId) {
         return accountMap.containsKey(userId);
     }

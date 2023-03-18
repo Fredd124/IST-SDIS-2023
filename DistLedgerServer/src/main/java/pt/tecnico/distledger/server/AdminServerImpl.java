@@ -84,7 +84,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
         ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
         for (Operation op : state.getLedgerState()) {
             DistLedgerCommonDefinitions.Operation operation = Converter
-                    .convert(op);
+                    .convertToGrpc(op);
             ledgerState.add(operation);
         }
         DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState
