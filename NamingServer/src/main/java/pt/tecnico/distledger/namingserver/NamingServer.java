@@ -3,6 +3,8 @@ package pt.tecnico.distledger.namingserver;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.io.IOException;
+
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -25,7 +27,26 @@ public class NamingServer {
         } */
         // Create a new server to listen on port
         ServerState state = new ServerState();
-		Server server = ServerBuilder.forPort(PORT).build();
+        final BindableService dnsImpl = new NamingServerServiceImpl();
+		Server server = ServerBuilder.forPort(PORT).addService(dnsImpl).build();
+        
+        // Start the server
+        try {
+            server.start();
+        }
+        catch (IOException e) {
+            System.out.println("Exception on bind");
+        }
+		// Server threads are running in the background.
+		System.out.println("Server started");
+
+		// Do not exit the main thread. Wait until server is terminated.
+        try {
+            server.awaitTermination();
+        }
+        catch (InterruptedException e) {
+            System.out.println("Exception on close");
+        }
     }
 
 }
