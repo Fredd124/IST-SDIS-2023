@@ -11,6 +11,7 @@ import pt.tecnico.distledger.namingserver.domain.exceptions.ServerStateException
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
+import static java.util.stream.Collectors.toList;
 
 import pt.tecnico.distledger.namingserver.domain.ServerState;
 
@@ -41,7 +42,7 @@ public class NamingServerServiceImpl extends NamingServerServiceImplBase {
         String serviceName = request.getName();
         String qualifier = request.getQualifier();
         LookupResponse response = LookupResponse.newBuilder().addAllServers(
-            state.lookupService(serviceName, qualifier).stream().map(entry -> entry.getQualifier()).toList()).
+            state.lookupService(serviceName, qualifier).stream().map(entry -> entry.getAddress()).collect(toList())).
             build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();

@@ -4,6 +4,7 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
+import pt.tecnico.distledger.adminclient.grpc.exceptions.NoServerFoundException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -15,7 +16,6 @@ public class AdminService {
         as well as individual methods for each remote operation of this service. */
 
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
-    private AdminServiceGrpc.AdminServiceBlockingStub stub;
     private ManagedChannel namingServerChannel, channel;
     private boolean debug;
 
@@ -25,22 +25,24 @@ public class AdminService {
         this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
     }
 
-    private void lookup(String server) {
+    private AdminServiceGrpc.AdminServiceBlockingStub lookup(String server) 
+                                                    throws NoServerFoundException{
         try {
             NamingServer.LookupRequest request = NamingServer.LookupRequest.newBuilder().
                                                     setName("DistLedger").setQualifier(server).build();
             NamingServer.LookupResponse response = namingServerStub.lookup(request);
             String address = response.getServers(0);
             this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-            this.stub = AdminServiceGrpc.newBlockingStub(channel);
+            AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
+            return stub;
         } catch (IndexOutOfBoundsException e) {
-            System.out.println("No server found with name " + server);
+            throw new NoServerFoundException("No server found with name " + server);
         }
     }
 
     public void activate(String server) {
         try {
-            lookup(server);
+            AdminServiceGrpc.AdminServiceBlockingStub stub = lookup(server);
 
             AdminDistLedger.ActivateRequest request = AdminDistLedger.ActivateRequest.newBuilder().build();
             debugPrint("Sending activate request to server...");
@@ -48,15 +50,17 @@ public class AdminService {
             System.out.println("OK");
             debugPrint("Server activated");
 
-            channel.shutdown();
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
+        } catch (NoServerFoundException e) {
+            System.out.println(e.getMessage());
         }
     }
 
     public void deactivate(String server) {
         try {
-            lookup(server);
+            AdminServiceGrpc.AdminServiceBlockingStub stub = lookup(server);
 
             AdminDistLedger.DeactivateRequest request = AdminDistLedger.DeactivateRequest.newBuilder().build();
             debugPrint("Sending deactivate request to server...");
@@ -64,15 +68,17 @@ public class AdminService {
             System.out.println("OK");
             debugPrint("Server deactivated");
 
-            channel.shutdown();
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
+        } catch (NoServerFoundException e) {
+            System.out.println(e.getMessage());
         }
     }
 
     public void gossip(String server) {
         try {
-            lookup(server);
+            AdminServiceGrpc.AdminServiceBlockingStub stub = lookup(server);
 
             AdminDistLedger.GossipRequest request = AdminDistLedger.GossipRequest.newBuilder().build();
             debugPrint("Sending gossip request to server...");
@@ -80,15 +86,17 @@ public class AdminService {
             System.out.println("OK");
             debugPrint("Server gossiped");
 
-            channel.shutdown();
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
+        } catch (NoServerFoundException e) {
+            System.out.println(e.getMessage());
         }
     }
 
     public void getLedgerState(String server) {
         try {
-            lookup(server);
+            AdminServiceGrpc.AdminServiceBlockingStub stub = lookup(server);
 
             AdminDistLedger.getLedgerStateRequest request = AdminDistLedger.getLedgerStateRequest.newBuilder().build();
             debugPrint("Sending getLedgerState request to server...");
@@ -97,10 +105,12 @@ public class AdminService {
             System.out.println("OK");
             System.out.println(response);
             debugPrint("LedgerState string to print created");
-            
-            channel.shutdown();
+
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
+        } catch (NoServerFoundException e) {
+            System.out.println(e.getMessage());
         }
 
         return;
