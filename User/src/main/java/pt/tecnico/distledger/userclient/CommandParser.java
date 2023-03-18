@@ -60,7 +60,7 @@ public class CommandParser {
                     case EXIT:
                         userService.debugPrint("Received from input exit command.");
                         exit = true;
-                        userService.userServiceChannelShutdown();
+                        userService.namingServerServiceChannelShutdown();
                         break;
 
                     default:

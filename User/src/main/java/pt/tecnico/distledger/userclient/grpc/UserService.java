@@ -18,81 +18,88 @@ import io.grpc.StatusRuntimeException;
 
 public class UserService {
 
-    private ManagedChannel channel;
-    private ManagedChannel dnsChannel;
+    private ManagedChannel channel, dnsChannel;
     private UserServiceGrpc.UserServiceBlockingStub stub;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
 
-    /*TODO: The gRPC client-side logic should be here.
-        This should include a method that builds a channel and stub,
-        as well as individual methods for each remote operation of this service. */
-
     public UserService(String target, boolean debug) {
-        this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        this.dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
-        this.stub = UserServiceGrpc.newBlockingStub(channel);
+        this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         this.debug = debug;
         debugPrint("Created user service.");
     }
 
-    public void lookupService(String serviceName, String qualifier) {
-        LookupRequest request = LookupRequest.newBuilder().setName(serviceName).setQualifier(qualifier).build();
-        LookupResponse response = dnsStub.lookup(request);
-        System.out.println(response.getServersCount());
-    }
-
-    public void userServiceChannelShutdown() {
-        debugPrint("Shut down client channel.");
-        channel.shutdownNow();
-    }
-
-    public void createAccount(String server, String username) {
-        CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
-
+    public void lookupService(String qualifier) {
         try {
+            LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier(qualifier).build();
+            LookupResponse response = dnsStub.lookup(request);
+            String address = response.getServers(0);
+            this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+            this.stub = UserServiceGrpc.newBlockingStub(channel);
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("No server found for qualifier " + qualifier);
+        }
+    }
+
+    public void namingServerServiceChannelShutdown() {
+        debugPrint("Shut down client channel.");
+        dnsChannel.shutdownNow();
+    }
+
+    public void createAccount(String qualifier, String username) {
+        try {
+            lookupService(qualifier);
+            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
+
             debugPrint("Send create account request to server.");
             stub.createAccount(request);
             System.out.println("OK");
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
     }
 
-    public void deleteAccount(String server, String username) {
-        DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
-
+    public void deleteAccount(String qualifier, String username) {
         try {
+            lookupService(qualifier);
+            DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
+
             debugPrint("Send delete account request to server.");
             stub.deleteAccount(request);
             System.out.println("OK");
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
     }
 
-    public void balance(String server, String username) {
-        BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
-        BalanceResponse response;
-
+    public void balance(String qualifier, String username) {
         try {
+            lookupService(qualifier);
+            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
+            BalanceResponse response;
+
             debugPrint("Send get balance request to server.");
             response = stub.balance(request);
             System.out.println("OK");
             System.out.println(response);
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
     }
 
-    public void transferTo(String server, String from, String dest, Integer amount) {
-        TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
-        
+    public void transferTo(String qualifier, String from, String dest, Integer amount) {        
         try {
+            lookupService(qualifier);
+            TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+
             debugPrint("Send transfer to account request to server.");
             stub.transferTo(request);
             System.out.println("OK");
+            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
