@@ -13,6 +13,18 @@ public class AdminClientMain {
             System.out.printf("arg[%d] = %s%n", i, args[i]);
         }
 
+        //check arguments - there should be either nothing or "-debug"
+        boolean debug = false;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("-debug")) {
+                debug = true;
+            }
+            else {
+                System.err.println(String.format("Invalid argument : %s .", args[i]));
+            }
+        }
+
+        /*
         // check arguments
         if (args.length < 2) {
             System.err.println("Argument(s) missing!");
@@ -33,6 +45,9 @@ public class AdminClientMain {
         final String host = args[0];
         final int port = Integer.parseInt(args[1]);
         final String target = host + ":" + port;
+        */
+
+        final String target = "localhost:5001";
 
         CommandParser parser = new CommandParser(new AdminService(target, debug));
         parser.parseInput();
