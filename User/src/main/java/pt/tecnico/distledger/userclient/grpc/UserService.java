@@ -1,5 +1,9 @@
 package pt.tecnico.distledger.userclient.grpc;
 
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceBlockingStub;
 import pt.ulisboa.tecnico.distledger.contract.user.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -15,7 +19,9 @@ import io.grpc.StatusRuntimeException;
 public class UserService {
 
     private ManagedChannel channel;
+    private ManagedChannel dnsChannel;
     private UserServiceGrpc.UserServiceBlockingStub stub;
+    private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
 
     /*TODO: The gRPC client-side logic should be here.
@@ -24,9 +30,17 @@ public class UserService {
 
     public UserService(String target, boolean debug) {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        this.dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
         this.stub = UserServiceGrpc.newBlockingStub(channel);
+        this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         this.debug = debug;
         debugPrint("Created user service.");
+    }
+
+    public void lookupService(String serviceName, String qualifier) {
+        LookupRequest request = LookupRequest.newBuilder().setName(serviceName).setQualifier(qualifier).build();
+        LookupResponse response = dnsStub.lookup(request);
+        System.out.println(response.getServersCount());
     }
 
     public void userServiceChannelShutdown() {

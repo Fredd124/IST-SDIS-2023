@@ -1,3 +1,5 @@
+package pt.tecnico.distledger.namingserver;
+
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
@@ -12,7 +14,7 @@ import static io.grpc.Status.INVALID_ARGUMENT;
 
 import pt.tecnico.distledger.namingserver.domain.ServerState;
 
-public class NamingServerServiceImpl {
+public class NamingServerServiceImpl extends NamingServerServiceImplBase {
     
     private ServerState state;
 
@@ -38,8 +40,9 @@ public class NamingServerServiceImpl {
     public void lookup(LookupRequest request, StreamObserver<LookupResponse> responseObserver) {
         String serviceName = request.getName();
         String qualifier = request.getQualifier();
-        state.lookupService(serviceName, qualifier);
-        LookupResponse response = LookupResponse.newBuilder().build();
+        LookupResponse response = LookupResponse.newBuilder().addAllServers(
+            state.lookupService(serviceName, qualifier).stream().map(entry -> entry.getQualifier()).toList()).
+            build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
