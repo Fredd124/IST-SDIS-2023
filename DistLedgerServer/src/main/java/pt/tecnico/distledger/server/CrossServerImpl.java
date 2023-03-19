@@ -11,6 +11,7 @@ import pt.tecnico.distledger.server.domain.operation.Operation;
 import io.grpc.stub.StreamObserver;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
 
@@ -24,7 +25,11 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
         
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
-        List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op)).toList();
+        List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
+            .collect(Collectors.toList());
         this.state.setLedgerState(ops);
+        PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 }

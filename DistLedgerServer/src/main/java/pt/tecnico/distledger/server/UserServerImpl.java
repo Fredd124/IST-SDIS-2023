@@ -24,6 +24,8 @@ import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
 
+import java.util.stream.Collectors;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -161,12 +163,14 @@ public class UserServerImpl extends UserServiceImplBase {
     }
 
     void propagateToSecondary() {
+        state.debugPrint("Doing lookup");
         LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
         ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
         NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
         LookupResponse response = dnsStub.lookup(request);
         channel.shutdown();
         String address = response.getServers(0); // TODO : implement for other cases 
+        state.debugPrint("Got server address: " + address);
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
             = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
@@ -174,10 +178,13 @@ public class UserServerImpl extends UserServiceImplBase {
             = DistLedgerCommonDefinitions.LedgerState.newBuilder()
             .addAllLedger(
                 state.getLedgerState().stream()
-                .map(op -> Converter.convertToGrpc(op)).toList()
+                .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
             ).build();
         PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setState(ledgerState).build();
+        state.debugPrint("Sending propagate request");
         stub.propagateState(propagateRequest);
+        state.debugPrint("Propagated successfully");
+        channel.shutdown();
 
     }
 

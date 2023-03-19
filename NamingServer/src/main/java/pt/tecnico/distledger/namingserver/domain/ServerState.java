@@ -36,12 +36,13 @@ public class ServerState {
 
         ServiceEntry serviceEntry = getService(serviceName);
         for (ServerEntry server: serviceEntry.getServers()) {
-            if (!server.getQualifier().equals(qualifier)) {
+            /* if (!server.getQualifier().equals(qualifier)) {
                 throw new RegisterNotPossible();
             }
             if (server.getAddress().equals(address)) {
                 throw new RegisterNotPossible();
-            }
+            } */
+            if (false) throw new RegisterNotPossible();
         }
         System.out.println(services.size());
         serviceEntry.addServer(address, qualifier);

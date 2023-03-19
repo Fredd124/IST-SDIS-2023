@@ -26,17 +26,19 @@ public class UserService {
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-        this.debug = debug;
+        this.debug = true; // FIXME : change this to debug when it's working
         debugPrint("Created user service.");
     }
 
     public void lookupService(String qualifier) {
         try {
+            System.out.println("Entered lookup");
             LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier(qualifier).build();
             LookupResponse response = dnsStub.lookup(request);
             String address = response.getServers(0);
             this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
             this.stub = UserServiceGrpc.newBlockingStub(channel);
+            System.out.println("left lookup");
         } catch (IndexOutOfBoundsException e) {
             System.out.println("No server found for qualifier " + qualifier);
         }
@@ -69,7 +71,7 @@ public class UserService {
             debugPrint("Send delete account request to server.");
             stub.deleteAccount(request);
             System.out.println("OK");
-            channel.shutdownNow();
+            channel.shutdown();
         } catch (StatusRuntimeException e) {
             System.out.println(e.getStatus().getDescription());
         }
