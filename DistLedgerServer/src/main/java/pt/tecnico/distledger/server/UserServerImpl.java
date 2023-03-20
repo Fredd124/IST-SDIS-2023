@@ -23,6 +23,7 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGr
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
@@ -97,6 +98,11 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void balance(BalanceRequest request,
             StreamObserver<BalanceResponse> responseObserver) {
+        if (!state.isActive()){
+            state.debugPrint("Server is innactive.");
+            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
+            return;
+        }
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received get balance request from userId : %s .", userId));
@@ -126,15 +132,22 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void createAccount(CreateAccountRequest request,
             StreamObserver<CreateAccountResponse> responseObserver) {
+        if (!state.isActive()){
+            state.debugPrint("Server is innactive.");
+            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
+            return;
+        }
         if (!canWrite) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
+            return;
         }
         if (!crossCommunication()) {
             state.debugPrint("Threw exception : Second server unavailable.");
             responseObserver.onError(ABORTED
                     .withDescription("Second server unavailable.").asRuntimeException());
+            return;
         }
         String userId = request.getUserId();
         state.debugPrint(String.format(
@@ -169,15 +182,22 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void deleteAccount(DeleteAccountRequest request,
             StreamObserver<DeleteAccountResponse> responseObserver) {
+        if (!state.isActive()){
+            state.debugPrint("Server is innactive.");
+            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
+            return;
+        }
         if (!canWrite) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
+            return;
         }
         if (!crossCommunication()) {
             state.debugPrint("Threw exception : Second server unavailable.");
             responseObserver.onError(ABORTED
                     .withDescription("Second server unavailable.").asRuntimeException());
+            return;
         }
         String userId = request.getUserId();
         state.debugPrint(String.format(
@@ -214,15 +234,22 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void transferTo(TransferToRequest request,
             StreamObserver<TransferToResponse> responseObserver) {
+        if (!state.isActive()){
+            state.debugPrint("Server is innactive.");
+            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
+            return;
+        }
         if (!canWrite) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
+            return;
         }
         if (!crossCommunication()) {
             state.debugPrint("Threw exception : Second server unavailable.");
             responseObserver.onError(ABORTED
                     .withDescription("Second server unavailable.").asRuntimeException());
+            return;
         }
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();

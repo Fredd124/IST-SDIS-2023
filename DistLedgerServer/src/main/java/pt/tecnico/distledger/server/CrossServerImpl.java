@@ -10,6 +10,8 @@ import pt.tecnico.distledger.server.domain.operation.Operation;
 
 import io.grpc.stub.StreamObserver;
 
+import static io.grpc.Status.UNAVAILABLE;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,7 +25,11 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
 
     @Override
     public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
-        
+        if (!state.isActive()){
+            state.debugPrint("Server is innactive.");
+            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
+            return;
+        }
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
             .collect(Collectors.toList());

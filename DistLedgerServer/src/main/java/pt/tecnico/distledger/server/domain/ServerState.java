@@ -27,6 +27,10 @@ public class ServerState {
         return this.active;
     }
 
+    public boolean isActive() {
+        return this.active;
+    }
+
     private void setActive(boolean active) {
         this.active = active;
     }
