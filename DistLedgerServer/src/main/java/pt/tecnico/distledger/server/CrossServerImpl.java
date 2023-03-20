@@ -5,7 +5,6 @@ import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLe
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase;
 import pt.tecnico.distledger.server.domain.ServerState;
-import pt.tecnico.distledger.server.domain.operation.Converter;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 
 import io.grpc.stub.StreamObserver;

@@ -11,10 +11,6 @@ import io.grpc.StatusRuntimeException;
 
 public class AdminService {
 
-    /* TODO: The gRPC client-side logic should be here.
-        This should include a method that builds a namingServerChannel and stub,
-        as well as individual methods for each remote operation of this service. */
-
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
     private ManagedChannel namingServerChannel, channel;
     private boolean debug;

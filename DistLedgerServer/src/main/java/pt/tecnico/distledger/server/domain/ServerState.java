@@ -11,14 +11,18 @@ import java.util.Map;
 public class ServerState {
 
     private List<Operation> ledger;
+    private String address;
+    private String qualifier;
     private boolean active;
     private boolean debug;
     private Map<String, Integer> accountMap;
 
-    public ServerState(boolean debug) {
+    public ServerState(boolean debug, String address, String qualifier) {
         this.ledger = new ArrayList<>();
         this.active = true;
         this.debug = debug;
+        this.address = address;
+        this.qualifier = qualifier;
         this.accountMap = new HashMap<>();
         createBroker();
     }
@@ -33,6 +37,14 @@ public class ServerState {
 
     private void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getAddress() {
+        return this.address;
+    }
+
+    public String getQualifier() {
+        return this.qualifier;
     }
 
     public synchronized void activate() throws AlreadyActiveException {

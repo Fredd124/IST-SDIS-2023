@@ -47,7 +47,7 @@ public class ServerMain {
             .setName("DistLedger")
             .setQualifier(qualifier).build();
         dnsStub.register(request);
-        ServerState state = new ServerState(debug);
+        ServerState state = new ServerState(debug, "localhost:" + port, qualifier);
         final BindableService adminImpl = new AdminServerImpl(state);
         final BindableService userImpl = new UserServerImpl(state, qualifier.equals("A") ? true : false);
         final BindableService crossServerImpl = new CrossServerImpl(state);
