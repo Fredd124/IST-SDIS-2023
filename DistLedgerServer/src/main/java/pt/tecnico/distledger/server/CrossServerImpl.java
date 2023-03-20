@@ -33,7 +33,12 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
             .collect(Collectors.toList());
-        this.state.setLedgerState(ops);
+        this.state.debugPrint(ops.size() + "|---|" + this.state.getLedgerState().size());
+        if (ops.size() > this.state.getLedgerState().size()) {
+            List<Operation> missingOps = ops.subList(this.state.getLedgerState().size(), ops.size());
+            this.state.debugPrint("Missing ops: " + missingOps.size());
+            this.state.doOpList(missingOps);
+        }
         PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
