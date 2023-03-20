@@ -45,7 +45,7 @@ public class UserServerImpl extends UserServiceImplBase {
         this.canWrite = canWrite;
     }
 
-    private boolean crossCommunication(){
+    /*private boolean crossCommunication(){
 
         try{
             ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
@@ -62,7 +62,7 @@ public class UserServerImpl extends UserServiceImplBase {
             return false;
         }
         return true;
-    }
+    }*/
 
     private boolean propagateToSecondary() {
         try {
@@ -133,7 +133,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (!crossCommunication()) {
+        if (!propagateToSecondary()) {
             state.debugPrint("Threw exception : Second server unavailable.");
             responseObserver.onError(ABORTED
                     .withDescription("Second server unavailable.").asRuntimeException());
@@ -178,7 +178,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (!crossCommunication()) {
+        if (!propagateToSecondary()) {
             state.debugPrint("Threw exception : Second server unavailable.");
             responseObserver.onError(ABORTED
                     .withDescription("Second server unavailable.").asRuntimeException());
@@ -225,7 +225,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (!crossCommunication()) {
+        if (!propagateToSecondary()) {
             state.debugPrint("Threw exception : Second server unavailable.");
             responseObserver.onError(ABORTED
                     .withDescription("Second server unavailable.").asRuntimeException());
