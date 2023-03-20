@@ -49,7 +49,7 @@ public class ServerMain {
         dnsStub.register(request);
         ServerState state = new ServerState(debug);
         final BindableService adminImpl = new AdminServerImpl(state);
-        final BindableService userImpl = new UserServerImpl(state);
+        final BindableService userImpl = new UserServerImpl(state, qualifier.equals("A") ? true : false);
         final BindableService crossServerImpl = new CrossServerImpl(state);
         
 

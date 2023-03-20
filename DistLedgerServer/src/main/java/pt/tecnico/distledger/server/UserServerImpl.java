@@ -19,10 +19,15 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceImplBase;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger;
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
+import static io.grpc.Status.ABORTED;
 
 import java.util.stream.Collectors;
 
@@ -32,9 +37,30 @@ import io.grpc.ManagedChannelBuilder;
 public class UserServerImpl extends UserServiceImplBase {
 
     private ServerState state;
+    private boolean canWrite;
 
-    public UserServerImpl(ServerState state) {
+    public UserServerImpl(ServerState state, boolean canWrite) {
         this.state = state;
+        this.canWrite = canWrite;
+    }
+
+    private boolean crossCommunication(){
+
+        try{
+            ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+            NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
+            NamingServer.LookupRequest request = NamingServer.LookupRequest.newBuilder().
+                                    setName("DistLedger").setQualifier(canWrite ? "B":"A").build();
+            NamingServer.LookupResponse response = namingServerStub.lookup(request);
+            String address = response.getServers(0);
+            ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+            channel.shutdownNow();
+            namingServerChannel.shutdownNow();
+        } catch (Exception e){
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -69,6 +95,16 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void createAccount(CreateAccountRequest request,
             StreamObserver<CreateAccountResponse> responseObserver) {
+        if (!canWrite) {
+            state.debugPrint("Threw exception : This server cannot write.");
+            responseObserver.onError(ABORTED
+                    .withDescription("This server cannot write.").asRuntimeException());
+        }
+        if (!crossCommunication()) {
+            state.debugPrint("Threw exception : Second server unavailable.");
+            responseObserver.onError(ABORTED
+                    .withDescription("Second server unavailable.").asRuntimeException());
+        }
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received create account request from userId : %s .", userId));
