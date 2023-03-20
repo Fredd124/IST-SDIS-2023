@@ -63,6 +63,37 @@ public class UserServerImpl extends UserServiceImplBase {
         return true;
     }
 
+    private boolean propagateToSecondary() {
+        try {
+            state.debugPrint("Doing lookup");
+            LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
+            ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+            NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
+            LookupResponse response = dnsStub.lookup(request);
+            channel.shutdown();
+            String address = response.getServers(0); // TODO : implement for other cases 
+            state.debugPrint("Got server address: " + address);
+            channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
+                = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+            DistLedgerCommonDefinitions.LedgerState ledgerState 
+                = DistLedgerCommonDefinitions.LedgerState.newBuilder()
+                .addAllLedger(
+                    state.getLedgerState().stream()
+                    .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
+                ).build();
+            PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setState(ledgerState).build();
+            state.debugPrint("Sending propagate request");
+            stub.propagateState(propagateRequest);
+            state.debugPrint("Propagated successfully");
+            channel.shutdown();
+        } catch (Exception e) {
+            state.debugPrint("Propagate failed");
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void balance(BalanceRequest request,
             StreamObserver<BalanceResponse> responseObserver) {
@@ -112,7 +143,10 @@ public class UserServerImpl extends UserServiceImplBase {
             state.createAccount(userId);
             state.debugPrint(
                     String.format("Created account for user %s .", userId));
-            propagateToSecondary();
+            if (!propagateToSecondary()){
+                responseObserver.onError(ABORTED
+                        .withDescription("Propagation failed.").asRuntimeException());
+            }
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -152,7 +186,10 @@ public class UserServerImpl extends UserServiceImplBase {
             state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Deleted account for user %s .", userId));
-            propagateToSecondary();
+            if (!propagateToSecondary()){
+                responseObserver.onError(ABORTED
+                        .withDescription("Propagation failed.").asRuntimeException());
+            }
             DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -198,7 +235,10 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
-            propagateToSecondary();
+            if (!propagateToSecondary()){
+                responseObserver.onError(ABORTED
+                        .withDescription("Propagation failed.").asRuntimeException());
+            }
             TransferToResponse response = TransferToResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -217,31 +257,4 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription(e.getMessage()).asRuntimeException());
         }
     }
-
-    void propagateToSecondary() {
-        state.debugPrint("Doing lookup");
-        LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
-        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
-        NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
-        LookupResponse response = dnsStub.lookup(request);
-        channel.shutdown();
-        String address = response.getServers(0); // TODO : implement for other cases 
-        state.debugPrint("Got server address: " + address);
-        channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-        DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
-            = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
-        DistLedgerCommonDefinitions.LedgerState ledgerState 
-            = DistLedgerCommonDefinitions.LedgerState.newBuilder()
-            .addAllLedger(
-                state.getLedgerState().stream()
-                .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
-            ).build();
-        PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setState(ledgerState).build();
-        state.debugPrint("Sending propagate request");
-        stub.propagateState(propagateRequest);
-        state.debugPrint("Propagated successfully");
-        channel.shutdown();
-
-    }
-
 }
