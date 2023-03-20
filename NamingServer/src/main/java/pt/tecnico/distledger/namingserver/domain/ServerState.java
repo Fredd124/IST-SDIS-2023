@@ -11,9 +11,10 @@ import java.util.ArrayList;
 public class ServerState {
     
     private HashMap<String, ServiceEntry> services = new HashMap<>();
+    private boolean isDebug;
 
-    public ServerState() {
-    
+    public ServerState(boolean isDebug) {
+        this.isDebug = isDebug;
     }
 
     public ServiceEntry getService(String serviceName) {
@@ -36,13 +37,9 @@ public class ServerState {
 
         ServiceEntry serviceEntry = getService(serviceName);
         for (ServerEntry server: serviceEntry.getServers()) {
-            /* if (!server.getQualifier().equals(qualifier)) {
+            if (server.getQualifier().equals(qualifier) || server.getAddress().equals(address)) {
                 throw new RegisterNotPossible();
             }
-            if (server.getAddress().equals(address)) {
-                throw new RegisterNotPossible();
-            } */
-            if (false) throw new RegisterNotPossible();
         }
         System.out.println(services.size());
         serviceEntry.addServer(address, qualifier);
@@ -73,5 +70,9 @@ public class ServerState {
         }
         ServiceEntry serviceEntry = getService(serviceName);
         serviceEntry.removeServer(address);
+    }
+
+    public void debugPrint(String outpString) {
+        System.err.println(outpString);
     }
 }
