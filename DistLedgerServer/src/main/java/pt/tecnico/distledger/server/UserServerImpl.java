@@ -135,6 +135,16 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void deleteAccount(DeleteAccountRequest request,
             StreamObserver<DeleteAccountResponse> responseObserver) {
+        if (!canWrite) {
+            state.debugPrint("Threw exception : This server cannot write.");
+            responseObserver.onError(ABORTED
+                    .withDescription("This server cannot write.").asRuntimeException());
+        }
+        if (!crossCommunication()) {
+            state.debugPrint("Threw exception : Second server unavailable.");
+            responseObserver.onError(ABORTED
+                    .withDescription("Second server unavailable.").asRuntimeException());
+        }
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received delete account request from userId : %s .", userId));
@@ -167,6 +177,16 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void transferTo(TransferToRequest request,
             StreamObserver<TransferToResponse> responseObserver) {
+        if (!canWrite) {
+            state.debugPrint("Threw exception : This server cannot write.");
+            responseObserver.onError(ABORTED
+                    .withDescription("This server cannot write.").asRuntimeException());
+        }
+        if (!crossCommunication()) {
+            state.debugPrint("Threw exception : Second server unavailable.");
+            responseObserver.onError(ABORTED
+                    .withDescription("Second server unavailable.").asRuntimeException());
+        }
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
