@@ -98,11 +98,6 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void balance(BalanceRequest request,
             StreamObserver<BalanceResponse> responseObserver) {
-        if (!state.isActive()){
-            state.debugPrint("Server is innactive.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
-            return;
-        }
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received get balance request from userId : %s .", userId));
@@ -132,11 +127,6 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void createAccount(CreateAccountRequest request,
             StreamObserver<CreateAccountResponse> responseObserver) {
-        if (!state.isActive()){
-            state.debugPrint("Server is innactive.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
-            return;
-        }
         if (!canWrite) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
@@ -182,11 +172,6 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void deleteAccount(DeleteAccountRequest request,
             StreamObserver<DeleteAccountResponse> responseObserver) {
-        if (!state.isActive()){
-            state.debugPrint("Server is innactive.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
-            return;
-        }
         if (!canWrite) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
@@ -234,11 +219,6 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void transferTo(TransferToRequest request,
             StreamObserver<TransferToResponse> responseObserver) {
-        if (!state.isActive()){
-            state.debugPrint("Server is innactive.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
-            return;
-        }
         if (!canWrite) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
