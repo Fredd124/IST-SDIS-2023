@@ -1,5 +1,9 @@
-package pt.tecnico.distledger.server.domain.operation;
+package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.operation.CreateOp;
+import pt.tecnico.distledger.server.domain.operation.DeleteOp;
+import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 

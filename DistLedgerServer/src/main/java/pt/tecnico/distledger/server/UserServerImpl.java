@@ -2,7 +2,6 @@ package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
-import pt.tecnico.distledger.server.domain.operation.Converter;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
