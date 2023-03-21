@@ -1,15 +1,10 @@
 package pt.tecnico.distledger.namingserver;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import java.io.IOException;
 
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-
-import pt.tecnico.distledger.namingserver.domain.ServerState;
 
 public class NamingServer {
 

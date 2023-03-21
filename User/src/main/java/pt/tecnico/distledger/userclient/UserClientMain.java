@@ -17,12 +17,10 @@ public class UserClientMain {
                 System.err.println(String.format("Invalid argument : %s .", args[i]));
             }
         }
-
     
         final String namingServerTarget = "localhost:5001";
         UserService service = new UserService(namingServerTarget, debug);
         CommandParser parser = new CommandParser(service);
-
         parser.parseInput();
     }
 }

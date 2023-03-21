@@ -14,8 +14,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import io.grpc.StatusRuntimeException;
 
-//One method for both stub and channel creation?
-
 public class UserService {
 
     private ManagedChannel channel, dnsChannel;
@@ -26,7 +24,7 @@ public class UserService {
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-        this.debug = true; // FIXME : change this to debug when it's working
+        this.debug = true; 
         debugPrint("Created user service.");
     }
 
@@ -34,12 +32,20 @@ public class UserService {
         try {
             System.out.println("Entered lookup");
             LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier(qualifier).build();
+            debugPrint(String.format("Sent lookup request to server DistLedger %s .", qualifier));
             LookupResponse response = dnsStub.lookup(request);
+            debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
+            if (response.getServersCount() == 0) {
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             String address = response.getServers(0);
             this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
             this.stub = UserServiceGrpc.newBlockingStub(channel);
             System.out.println("left lookup");
         } catch (IndexOutOfBoundsException e) {
+            debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
             System.out.println("No server found for qualifier " + qualifier);
         }
     }
@@ -52,13 +58,15 @@ public class UserService {
     public void createAccount(String qualifier, String username) {
         try {
             lookupService(qualifier);
-            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
 
-            debugPrint("Send create account request to server.");
+            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
+            debugPrint(String.format("Sent create account request to server with username %s as argument.", username));
             stub.createAccount(request);
             System.out.println("OK");
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
@@ -66,13 +74,15 @@ public class UserService {
     public void deleteAccount(String qualifier, String username) {
         try {
             lookupService(qualifier);
-            DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
 
-            debugPrint("Send delete account request to server.");
+            DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
+            debugPrint(String.format("Sent delete account request to server with username %s as argument.", username));
             stub.deleteAccount(request);
             System.out.println("OK");
             channel.shutdown();
         } catch (StatusRuntimeException e) {
+            debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
@@ -83,12 +93,15 @@ public class UserService {
             BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse response;
 
-            debugPrint("Send get balance request to server.");
+            debugPrint(String.format("Sent balance request to server with username %s as argument.", username));
             response = stub.balance(request);
+            debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
             System.out.println("OK");
             System.out.println(response);
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
@@ -98,11 +111,13 @@ public class UserService {
             lookupService(qualifier);
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
 
-            debugPrint("Send transfer to account request to server.");
+            debugPrint(String.format("Sent transferTo request to server with from %s, dest %s and amount %d as arguments.", from, dest, amount));
             stub.transferTo(request);
             System.out.println("OK");
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }

@@ -4,7 +4,6 @@ import pt.tecnico.distledger.namingserver.domain.ServerEntry;
 import pt.tecnico.distledger.namingserver.domain.ServiceEntry;
 import pt.tecnico.distledger.namingserver.domain.exceptions.*;
 import java.util.HashMap;
-import java.util.Map;   
 import java.util.List;
 import java.util.ArrayList;
 
@@ -73,6 +72,6 @@ public class ServerState {
     }
 
     public void debugPrint(String outpString) {
-        System.err.println(outpString);
+        if (isDebug) System.err.println(outpString);
     }
 }
