@@ -28,60 +28,59 @@ import java.util.stream.Collectors;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 
 public class UserServerImpl extends UserServiceImplBase {
 
     private ServerState state;
+	private ServerCache serverCache;
+    private ManagedChannel dnsChannel;
+    private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
 
     public UserServerImpl(ServerState state) {
         this.state = state;
+        serverCache = new ServerCache();
+        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }
 
-    /*private boolean crossCommunication(){
-
-        try{
-            ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
-            NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
-            NamingServer.LookupRequest request = NamingServer.LookupRequest.newBuilder().
-                                    setName("DistLedger").setQualifier(canWrite ? "B":"A").build();
-            NamingServer.LookupResponse response = namingServerStub.lookup(request);
-            String address = response.getServers(0);
-            ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
-            channel.shutdownNow();
-            namingServerChannel.shutdownNow();
-        } catch (Exception e){
-            return false;
-        }
-        return true;
-    }*/
-
     private void propagateToSecondary() {
+        DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub; 
         try {
-            state.debugPrint("Doing lookup");
-            LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
-            ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
-            NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
-            LookupResponse response = dnsStub.lookup(request);
-            channel.shutdown();
-            String address = response.getServers(0);
-            state.debugPrint("Got server address: " + address);
-            channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
-                = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+            if (! serverCache.hasEntry("B")) {
+                state.debugPrint("Doing lookup");
+                LookupRequest request = LookupRequest.newBuilder().setName("DistLedger")
+                    .setQualifier("B").build();
+                LookupResponse response = dnsStub.lookup(request);
+                String address = response.getServers(0);
+                state.debugPrint("Got server address: " + address);
+                ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+                stub
+                    = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+                serverCache.addEntry("B", address);
+                state.debugPrint(String.format("Added B qualifier to server cache."));
+            }
+            else stub = serverCache.getEntry("B").getStub();
             DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
                     state.getLedgerState().stream()
                     .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
                 ).build();
-            PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setState(ledgerState).build();
+            PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
+                .setState(ledgerState).build();
             state.debugPrint("Sending propagate request");
             stub.propagateState(propagateRequest);
             state.debugPrint("Propagated successfully");
-            channel.shutdown();
-        } catch (Exception e) {
+            /* channel.shutdown(); */
+        } 
+        catch (IndexOutOfBoundsException e) {
             state.debugPrint("Propagate failed");
+        }
+        catch (StatusRuntimeException e ) {
+            serverCache.invalidateEntry("B");
+            state.debugPrint("Propagate failed for server in cache.");
+            /* propagateToSecondary(); */
         }
     }
 

@@ -80,10 +80,12 @@ public class ServerState {
     }
 
     public List<Operation> getLedgerState() {
-        return this.ledger;
+        synchronized(this.ledger) {
+            return this.ledger;
+        }
     }
 
-    public void setLedgerState(List<Operation> ops) {
+    public synchronized void setLedgerState(List<Operation> ops) {
         this.ledger = ops;
     }
 

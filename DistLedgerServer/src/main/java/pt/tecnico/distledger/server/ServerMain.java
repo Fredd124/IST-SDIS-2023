@@ -10,6 +10,7 @@ import io.grpc.ServerBuilder;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceBlockingStub;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 public class ServerMain {
 
@@ -42,12 +43,13 @@ public class ServerMain {
 
         ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
         NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
+        final String address = "localhost:" + port;
         RegisterRequest request = RegisterRequest.newBuilder()
-            .setAddress("localhost:" + port)
+            .setAddress(address)
             .setName("DistLedger")
             .setQualifier(qualifier).build();
         dnsStub.register(request);
-        ServerState state = new ServerState(debug, "localhost:" + port, qualifier);
+        ServerState state = new ServerState(debug, address , qualifier);
         final BindableService adminImpl = new AdminServerImpl(state);
         final BindableService userImpl = new UserServerImpl(state);
         final BindableService crossServerImpl = new CrossServerImpl(state);
@@ -70,6 +72,10 @@ public class ServerMain {
 		// Do not exit the main thread. Wait until server is terminated.
         try {
             server.awaitTermination();
+            DeleteRequest deleteRequest = DeleteRequest.newBuilder().
+                setAddress(address).setName("DistLedger").build();
+            dnsStub.delete(deleteRequest);
+            dnsChannel.shutdown();
         }
         catch (InterruptedException e) {
             System.out.println("Exception on close");
