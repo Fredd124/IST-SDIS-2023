@@ -35,6 +35,10 @@ public class UserService {
             debugPrint(String.format("Sent lookup request to server DistLedger %s .", qualifier));
             LookupResponse response = dnsStub.lookup(request);
             debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
+            if (response.getServersCount() == 0) {
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             String address = response.getServers(0);
             this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
             this.stub = UserServiceGrpc.newBlockingStub(channel);

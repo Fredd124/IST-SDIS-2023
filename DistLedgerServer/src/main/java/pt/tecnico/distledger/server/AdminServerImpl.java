@@ -16,7 +16,6 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 
 import java.util.ArrayList;
