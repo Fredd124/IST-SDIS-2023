@@ -57,11 +57,13 @@ public class UserService {
             debugPrint(String.format("Sent create account request to server with username %s as argument.", username));
             stub.createAccount(request);
             System.out.println("OK");
-            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caugth exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+        }
+        finally {
+            channel.shutdown();
         }
     }
 
@@ -79,6 +81,9 @@ public class UserService {
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
+        finally {
+            channel.shutdown();
+        }
     }
 
     public void balance(String qualifier, String username) {
@@ -92,11 +97,13 @@ public class UserService {
             debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
             System.out.println("OK");
             System.out.println(response);
-            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+        }
+        finally {
+            channel.shutdown();
         }
     }
 
@@ -108,11 +115,13 @@ public class UserService {
             debugPrint(String.format("Sent transferTo request to server with from %s, dest %s and amount %d as arguments.", from, dest, amount));
             stub.transferTo(request);
             System.out.println("OK");
-            channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+        }
+        finally {
+            channel.shutdown();
         }
     }
 
