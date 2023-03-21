@@ -38,6 +38,8 @@ public class UserService {
             debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
             String address = response.getServers(0);
             servers.put(qualifier, address);
+            this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+            this.stub = UserServiceGrpc.newBlockingStub(channel);
         } catch (IndexOutOfBoundsException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
