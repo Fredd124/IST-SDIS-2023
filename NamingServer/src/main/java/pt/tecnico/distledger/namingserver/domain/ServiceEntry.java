@@ -26,7 +26,8 @@ public class ServiceEntry {
     }
 
     public void removeServer(String address) {
-        for (ServerEntry server : servers) {
+        for (int i = servers.size() - 1; i >= 0; i--) {
+            ServerEntry server = servers.get(i);
             if (server.getAddress().equals(address)) {
                 servers.remove(server);
             }
