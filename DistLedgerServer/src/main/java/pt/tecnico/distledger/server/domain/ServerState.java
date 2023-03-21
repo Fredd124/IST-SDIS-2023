@@ -35,6 +35,10 @@ public class ServerState {
         return this.active;
     }
 
+    public boolean canWrite() {
+        return this.qualifier.equals("A");
+    }
+
     private void setActive(boolean active) {
         this.active = active;
     }

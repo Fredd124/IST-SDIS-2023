@@ -18,11 +18,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceImplBase;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
@@ -37,11 +32,9 @@ import io.grpc.ManagedChannelBuilder;
 public class UserServerImpl extends UserServiceImplBase {
 
     private ServerState state;
-    private boolean canWrite;
 
-    public UserServerImpl(ServerState state, boolean canWrite) {
+    public UserServerImpl(ServerState state) {
         this.state = state;
-        this.canWrite = canWrite;
     }
 
     /*private boolean crossCommunication(){
@@ -63,7 +56,7 @@ public class UserServerImpl extends UserServiceImplBase {
         return true;
     }*/
 
-    private boolean propagateToSecondary() {
+    private void propagateToSecondary() {
         try {
             state.debugPrint("Doing lookup");
             LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
@@ -71,7 +64,7 @@ public class UserServerImpl extends UserServiceImplBase {
             NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
             LookupResponse response = dnsStub.lookup(request);
             channel.shutdown();
-            String address = response.getServers(0); // TODO : implement for other cases 
+            String address = response.getServers(0);
             state.debugPrint("Got server address: " + address);
             channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
@@ -89,9 +82,18 @@ public class UserServerImpl extends UserServiceImplBase {
             channel.shutdown();
         } catch (Exception e) {
             state.debugPrint("Propagate failed");
-            return false;
         }
-        return true;
+    }
+
+    private boolean canPropagate() {
+
+        state.debugPrint("Doing lookup");
+        LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
+        LookupResponse response = dnsStub.lookup(request);
+        channel.shutdown();
+        return response.getServersCount() > 0;
     }
 
     @Override
@@ -126,17 +128,17 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void createAccount(CreateAccountRequest request,
             StreamObserver<CreateAccountResponse> responseObserver) {
-        if (!canWrite) {
+        if (! state.canWrite()) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (!propagateToSecondary()) {
-            state.debugPrint("Threw exception : Second server unavailable.");
-            responseObserver.onError(ABORTED
-                    .withDescription("Second server unavailable.").asRuntimeException());
-            return;
+        if (! canPropagate()) {
+			state.debugPrint("Threw exception : Secondary server offline.");
+			responseObserver.onError(ABORTED
+					.withDescription("Secondary server offline.").asRuntimeException());
+			return;
         }
         String userId = request.getUserId();
         state.debugPrint(String.format(
@@ -145,10 +147,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.createAccount(userId);
             state.debugPrint(
                     String.format("Created account for user %s .", userId));
-            if (!propagateToSecondary()){
-                responseObserver.onError(ABORTED
-                        .withDescription("Propagation failed.").asRuntimeException());
-            }
+			propagateToSecondary();
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -171,18 +170,18 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void deleteAccount(DeleteAccountRequest request,
             StreamObserver<DeleteAccountResponse> responseObserver) {
-        if (!canWrite) {
+        if (!state.canWrite()) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (!propagateToSecondary()) {
-            state.debugPrint("Threw exception : Second server unavailable.");
-            responseObserver.onError(ABORTED
-                    .withDescription("Second server unavailable.").asRuntimeException());
-            return;
-        }
+		if (! canPropagate()) {
+			state.debugPrint("Threw exception : Secondary server offline.");
+			responseObserver.onError(ABORTED
+					.withDescription("Secondary server offline.").asRuntimeException());
+			return;
+		}
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received delete account request from userId : %s .", userId));
@@ -190,10 +189,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Deleted account for user %s .", userId));
-            if (!propagateToSecondary()){
-                responseObserver.onError(ABORTED
-                        .withDescription("Propagation failed.").asRuntimeException());
-            }
+            propagateToSecondary();
             DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
@@ -218,18 +214,18 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void transferTo(TransferToRequest request,
             StreamObserver<TransferToResponse> responseObserver) {
-        if (!canWrite) {
+        if (!state.canWrite()) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (!propagateToSecondary()) {
-            state.debugPrint("Threw exception : Second server unavailable.");
-            responseObserver.onError(ABORTED
-                    .withDescription("Second server unavailable.").asRuntimeException());
-            return;
-        }
+        if (! canPropagate()) {
+			state.debugPrint("Threw exception : Secondary server offline.");
+			responseObserver.onError(ABORTED
+					.withDescription("Secondary server offline").asRuntimeException());
+			return;
+		}
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
@@ -241,10 +237,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
-            if (!propagateToSecondary()){
-                responseObserver.onError(ABORTED
-                        .withDescription("Propagation failed.").asRuntimeException());
-            }
+            propagateToSecondary();
             TransferToResponse response = TransferToResponse.newBuilder()
                     .build();
             responseObserver.onNext(response);
