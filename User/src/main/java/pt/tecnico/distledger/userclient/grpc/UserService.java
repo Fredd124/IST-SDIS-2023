@@ -13,6 +13,7 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import io.grpc.StatusRuntimeException;
+import java.util.HashMap;
 
 public class UserService {
 
@@ -20,6 +21,7 @@ public class UserService {
     private UserServiceGrpc.UserServiceBlockingStub stub;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
+    private HashMap<String, String> servers = new HashMap<>();
 
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
@@ -35,6 +37,7 @@ public class UserService {
             LookupResponse response = dnsStub.lookup(request);
             debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
             String address = response.getServers(0);
+            servers.put(qualifier, address);
             this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
             this.stub = UserServiceGrpc.newBlockingStub(channel);
         } catch (IndexOutOfBoundsException e) {
@@ -51,8 +54,13 @@ public class UserService {
 
     public void createAccount(String qualifier, String username) {
         try {
-            lookupService(qualifier);
-
+            if (!servers.containsKey(qualifier)) {
+                lookupService(qualifier);
+            } else {
+                String address = servers.get(qualifier);
+                this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+                this.stub = UserServiceGrpc.newBlockingStub(channel);
+            }
             CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
             debugPrint(String.format("Sent create account request to server with username %s as argument.", username));
             stub.createAccount(request);
@@ -61,6 +69,7 @@ public class UserService {
             debugPrint(
                     String.format("Caugth exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+            servers.remove(qualifier);
         }
         finally {
             channel.shutdown();
@@ -69,8 +78,13 @@ public class UserService {
 
     public void deleteAccount(String qualifier, String username) {
         try {
-            lookupService(qualifier);
-
+            if (!servers.containsKey(qualifier)) {
+                lookupService(qualifier);
+            } else {
+                String address = servers.get(qualifier);
+                this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+                this.stub = UserServiceGrpc.newBlockingStub(channel);
+            }
             DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
             debugPrint(String.format("Sent delete account request to server with username %s as argument.", username));
             stub.deleteAccount(request);
@@ -80,6 +94,7 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+            servers.remove(qualifier);
         }
         finally {
             channel.shutdown();
@@ -88,10 +103,15 @@ public class UserService {
 
     public void balance(String qualifier, String username) {
         try {
-            lookupService(qualifier);
+            if (!servers.containsKey(qualifier)) {
+                lookupService(qualifier);
+            } else {
+                String address = servers.get(qualifier);
+                this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+                this.stub = UserServiceGrpc.newBlockingStub(channel);
+            }
             BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
-            BalanceResponse response;
-
+            BalanceResponse response;    
             debugPrint(String.format("Sent balance request to server with username %s as argument.", username));
             response = stub.balance(request);
             debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
@@ -101,6 +121,7 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+            servers.remove(qualifier);
         }
         finally {
             channel.shutdown();
@@ -109,9 +130,14 @@ public class UserService {
 
     public void transferTo(String qualifier, String from, String dest, Integer amount) {        
         try {
-            lookupService(qualifier);
+            if (!servers.containsKey(qualifier)) {
+                lookupService(qualifier);
+            } else {
+                String address = servers.get(qualifier);
+                this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+                this.stub = UserServiceGrpc.newBlockingStub(channel);
+            }
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
-
             debugPrint(String.format("Sent transferTo request to server with from %s, dest %s and amount %d as arguments.", from, dest, amount));
             stub.transferTo(request);
             System.out.println("OK");
@@ -119,6 +145,7 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
+            servers.remove(qualifier);
         }
         finally {
             channel.shutdown();
