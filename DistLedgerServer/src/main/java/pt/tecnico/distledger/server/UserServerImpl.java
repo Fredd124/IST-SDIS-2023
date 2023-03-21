@@ -128,7 +128,7 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void createAccount(CreateAccountRequest request,
             StreamObserver<CreateAccountResponse> responseObserver) {
-        if (! state.canWrite()) {
+        if (!state.canWrite()) {
             state.debugPrint("Threw exception : This server cannot write.");
             responseObserver.onError(ABORTED
                     .withDescription("This server cannot write.").asRuntimeException());
@@ -220,7 +220,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription("This server cannot write.").asRuntimeException());
             return;
         }
-        if (! canPropagate()) {
+        if (!canPropagate()) {
 			state.debugPrint("Threw exception : Secondary server offline.");
 			responseObserver.onError(ABORTED
 					.withDescription("Secondary server offline").asRuntimeException());

@@ -30,22 +30,16 @@ public class UserService {
 
     public void lookupService(String qualifier) {
         try {
-            System.out.println("Entered lookup");
             LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier(qualifier).build();
             debugPrint(String.format("Sent lookup request to server DistLedger %s .", qualifier));
             LookupResponse response = dnsStub.lookup(request);
             debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
-            if (response.getServersCount() == 0) {
-                System.out.println("No server found for qualifier " + qualifier);
-                return;
-            }
             String address = response.getServers(0);
             this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
             this.stub = UserServiceGrpc.newBlockingStub(channel);
-            System.out.println("left lookup");
         } catch (IndexOutOfBoundsException e) {
             debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                    String.format("Caught exception : %s .", e.getMessage()));
             System.out.println("No server found for qualifier " + qualifier);
         }
     }
@@ -66,7 +60,7 @@ public class UserService {
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                    String.format("Caugth exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
@@ -82,7 +76,7 @@ public class UserService {
             channel.shutdown();
         } catch (StatusRuntimeException e) {
             debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                    String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
@@ -101,7 +95,7 @@ public class UserService {
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                    String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
@@ -117,7 +111,7 @@ public class UserService {
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
             debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                    String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         }
     }
