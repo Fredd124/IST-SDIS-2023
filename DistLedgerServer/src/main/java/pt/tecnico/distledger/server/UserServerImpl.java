@@ -144,7 +144,11 @@ public class UserServerImpl extends UserServiceImplBase {
             done = state.createAccount(userId);
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
-			if (!propagateToSecondary()) return;
+			if (!propagateToSecondary()) {
+                responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
+                    .asRuntimeException());
+                return;
+            }
         }
         catch (NotActiveException e) {
             state.debugPrint(
@@ -187,7 +191,11 @@ public class UserServerImpl extends UserServiceImplBase {
             done = state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Created operation to delete account for user %s .", userId));
-            if (!propagateToSecondary()) return;
+            if (!propagateToSecondary()) {
+                responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
+                    .asRuntimeException());
+                return;
+            }
         }
         catch (NotActiveException e) {
             state.debugPrint(
@@ -236,7 +244,11 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
-            if (!propagateToSecondary()) return;
+            if (!propagateToSecondary()) {
+                responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
+                    .asRuntimeException());
+                return;
+            }
         }
         catch (NotActiveException e) {
             state.debugPrint(
