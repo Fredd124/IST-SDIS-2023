@@ -50,7 +50,6 @@ public class UserServerImpl extends UserServiceImplBase {
     }
 
     private boolean propagateToSecondary(Operation op) {
-        DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub; 
         try {
             if (! serverCache.hasEntry("B")) {
                 state.debugPrint("Doing lookup");
@@ -59,13 +58,11 @@ public class UserServerImpl extends UserServiceImplBase {
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);
                 state.debugPrint("Got server address: " + address);
-                ManagedChannel channel = ManagedChannelBuilder.forTarget(address)
-                    .usePlaintext().build();
-                stub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
                 serverCache.addEntry("B", address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
-            else stub = serverCache.getEntry("B").getStub();
+            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
+                 = serverCache.getEntry("B").getStub();
 
             try {
                 DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(op);

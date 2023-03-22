@@ -112,7 +112,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     }
 
     private void lookupAndAsk(String qualifier) {
-        DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub; 
         try {
             if (! serverCache.hasEntry(qualifier)) {
                 state.debugPrint("Doing lookup");
@@ -121,13 +120,11 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);
                 state.debugPrint("Got server address: " + address);
-                ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-                stub
-                    = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
                 serverCache.addEntry(qualifier, address);
-                state.debugPrint(String.format("Added B qualifier to server cache."));
+                state.debugPrint(String.format("Added %s qualifier to server cache.", qualifier));
             }
-            else stub = serverCache.getEntry(qualifier).getStub();
+            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
+                = serverCache.getEntry(qualifier).getStub();
 
             ProvideStateRequest request = ProvideStateRequest.newBuilder().build();
             ProvideStateResponse response = stub.provideState(request);
