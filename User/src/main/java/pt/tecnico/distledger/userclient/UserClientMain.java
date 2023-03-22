@@ -5,9 +5,6 @@ import pt.tecnico.distledger.userclient.grpc.UserService;
 
 public class UserClientMain {
     public static void main(String[] args) {
-
-        System.out.println(UserClientMain.class.getSimpleName());
-
         boolean debug = false;
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-debug")) {

@@ -14,6 +14,8 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import io.grpc.StatusRuntimeException;
+import static io.grpc.Status.UNAVAILABLE;
+
 
 public class UserService {
 
@@ -26,7 +28,7 @@ public class UserService {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         serverCache = new ServerCache();
-        this.debug = true; 
+        this.debug = debug; 
         debugPrint("Created user service.");
     }
 
@@ -42,7 +44,7 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println("No server found for qualifier " + qualifier);
-        }
+        } 
     }
 
     public void namingServerServiceChannelShutdown() {
@@ -65,8 +67,10 @@ public class UserService {
             debugPrint(
                     String.format("Caugth exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
-            serverCache.removeEntry(qualifier);
-        }
+            if (e.getStatus().equals(UNAVAILABLE)) {
+                serverCache.removeEntry(qualifier);
+            }
+        }   
     }
 
     public void deleteAccount(String qualifier, String username) {
@@ -83,8 +87,10 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
-            serverCache.removeEntry(qualifier);
-        }
+            if (e.getStatus().equals(UNAVAILABLE)) {
+                serverCache.removeEntry(qualifier);
+            }
+        }   
     }
 
     public void balance(String qualifier, String username) {
@@ -104,8 +110,10 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
-            serverCache.removeEntry(qualifier);
-        }
+            if (e.getStatus().equals(UNAVAILABLE)) {
+                serverCache.removeEntry(qualifier);
+            }
+        }   
     }
 
     public void transferTo(String qualifier, String from, String dest, Integer amount) {        
@@ -122,8 +130,10 @@ public class UserService {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
-            serverCache.removeEntry(qualifier);
-        }
+            if (e.getStatus().equals(UNAVAILABLE)) {
+                serverCache.removeEntry(qualifier);
+            }
+        }   
     }
 
     public void debugPrint(String message) {

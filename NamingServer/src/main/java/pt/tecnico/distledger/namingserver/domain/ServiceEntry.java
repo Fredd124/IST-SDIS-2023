@@ -1,6 +1,5 @@
 package pt.tecnico.distledger.namingserver.domain;
 
-import pt.tecnico.distledger.namingserver.domain.ServerEntry;
 import java.util.ArrayList;
 import java.util.List;
 
