@@ -36,11 +36,11 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     public CrossServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
+        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         if (state.getLedgerState().size() == 0) {
             this.askForState();
         }
-        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
-        dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }
 
     @Override
