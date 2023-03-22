@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collections;
+import java.util.Iterator;
 
 public class ServerState {
 
@@ -83,9 +84,13 @@ public class ServerState {
     }
 
     public List<Operation> getLedgerState() {
+        List<Operation> copy = new ArrayList<>();
         synchronized(this.ledger) {
-            return this.ledger;
+            Iterator<Operation> i = this.ledger.iterator(); 
+            while (i.hasNext())
+                copy.add(i.next());
         }
+        return copy;
     }
 
     public synchronized void setLedgerState(List<Operation> ops) {
@@ -170,13 +175,17 @@ public class ServerState {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
-            ledger.add(createOp);
+            synchronized(this.ledger) {
+                ledger.add(createOp);
+            }
             debugPrint("Created account: " + createOp.getAccount());
         } 
         else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
             DeleteOp deleteOp = (DeleteOp) op;
             accountMap.remove(deleteOp.getAccount());
-            ledger.add(deleteOp);
+            synchronized(this.ledger) {
+                ledger.add(deleteOp);
+            }
             debugPrint("Deleted account: " + deleteOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
@@ -185,7 +194,9 @@ public class ServerState {
                         accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
             accountMap.put(transferOp.getDestAccount(), 
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-            ledger.add(transferOp);
+            synchronized(this.ledger) {
+                ledger.add(transferOp);
+            }
             debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
         }
     }
