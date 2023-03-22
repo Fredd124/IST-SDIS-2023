@@ -59,9 +59,9 @@ public class UserServerImpl extends UserServiceImplBase {
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);
                 state.debugPrint("Got server address: " + address);
-                ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
-                stub
-                    = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+                ManagedChannel channel = ManagedChannelBuilder.forTarget(address)
+                    .usePlaintext().build();
+                stub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
                 serverCache.addEntry("B", address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
@@ -86,7 +86,6 @@ public class UserServerImpl extends UserServiceImplBase {
                 state.debugPrint("Sending propagate request");
                 stub.propagateState(propagateRequest);
                 state.debugPrint("Propagated successfully");
-                /* channel.shutdown(); */
             }
             
 

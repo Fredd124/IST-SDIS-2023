@@ -54,7 +54,7 @@ public class ServerMain {
         ServerCache serverCache = new ServerCache();
         final BindableService adminImpl = new AdminServerImpl(state);
         final UserServerImpl userImpl = new UserServerImpl(state, serverCache);
-        final BindableService crossServerImpl = new CrossServerImpl(state, serverCache);
+        final CrossServerImpl crossServerImpl = new CrossServerImpl(state, serverCache);
         
 
         // Create a new server to listen on port
@@ -84,6 +84,7 @@ public class ServerMain {
         dnsStub.delete(deleteRequest);
         dnsChannel.shutdown();
         userImpl.shutdownChannels();
+        crossServerImpl.shutdownChannel();
         server.shutdown();
     }
 

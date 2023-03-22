@@ -53,7 +53,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
             .collect(Collectors.toList());
-        this.state.debugPrint(ops.size() + "|---|" + this.state.getLedgerState().size());
         if (ops.size() > this.state.getLedgerState().size()) {
             List<Operation> missingOps = ops.subList(this.state.getLedgerState().size(), ops.size());
             this.state.debugPrint("Missing ops: " + missingOps.size());
@@ -72,7 +71,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             return;
         }
         DistLedgerCommonDefinitions.LedgerState ledgerState 
-        = DistLedgerCommonDefinitions.LedgerState.newBuilder()
+            = DistLedgerCommonDefinitions.LedgerState.newBuilder()
         .addAllLedger(
             state.getLedgerState().stream()
             .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
@@ -150,5 +149,9 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             state.debugPrint("Propagate failed for server in cache.");
             lookupAndAsk(qualifier);
         }
+    }
+
+    public void shutdownChannel() {
+        dnsChannel.shutdown();
     }
 }
