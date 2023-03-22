@@ -6,6 +6,8 @@ import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
@@ -61,18 +63,30 @@ public class UserServerImpl extends UserServiceImplBase {
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
             else stub = serverCache.getEntry("B").getStub();
-            DistLedgerCommonDefinitions.LedgerState ledgerState 
+
+            try {
+                DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(state.getLasOperation());
+                PropagateOperationRequest propagateOperationRequest = PropagateOperationRequest.newBuilder()
+                    .setOperation(operation).build();
+                state.debugPrint("Sending propagate operation request");
+                stub.propagateOperation(propagateOperationRequest);
+                state.debugPrint("Propagated operation successfully");
+            } catch (StatusRuntimeException e) {
+                DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
                     state.getLedgerState().stream()
                     .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
                 ).build();
-            PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
-                .setState(ledgerState).build();
-            state.debugPrint("Sending propagate request");
-            stub.propagateState(propagateRequest);
-            state.debugPrint("Propagated successfully");
-            /* channel.shutdown(); */
+                PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
+                    .setState(ledgerState).build();
+                state.debugPrint("Sending propagate request");
+                stub.propagateState(propagateRequest);
+                state.debugPrint("Propagated successfully");
+                /* channel.shutdown(); */
+            }
+            
+
         } 
         catch (IndexOutOfBoundsException e) {
             state.debugPrint("Propagate failed");
