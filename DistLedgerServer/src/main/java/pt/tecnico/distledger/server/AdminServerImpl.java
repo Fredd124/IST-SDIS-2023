@@ -28,7 +28,9 @@ import static io.grpc.Status.UNAVAILABLE;
 
 public class AdminServerImpl extends AdminServiceImplBase {
 
-    ServerState state;
+    private ServerState state;
+    private final String SERVICE_NAME = "DistLedger";
+    private final String NAMING_SERVER_TARGET = "localhost:5001";
 
     public AdminServerImpl(ServerState state) {
         this.state = state;
@@ -41,11 +43,11 @@ public class AdminServerImpl extends AdminServiceImplBase {
         state.debugPrint("Received activate request from admin.");
         try {
             state.activate();
-            ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001")
+            ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET)
                 .usePlaintext().build();
             NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = 
                 NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-            RegisterRequest registerRequest = RegisterRequest.newBuilder().setName("DistLedger")
+            RegisterRequest registerRequest = RegisterRequest.newBuilder().setName(SERVICE_NAME)
                 .setAddress(state.getAddress()).setQualifier(state.getQualifier()).build();
             dnsStub.register(registerRequest);
             state.debugPrint(String.format("Activated server ."));
@@ -68,11 +70,11 @@ public class AdminServerImpl extends AdminServiceImplBase {
         state.debugPrint("Received deactivate request from admin.");
         try {
             state.deactivate();
-            ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001")
+            ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET)
                 .usePlaintext().build();
             NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = 
                 NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-            DeleteRequest deleteRequest = DeleteRequest.newBuilder().setName("DistLedger")
+            DeleteRequest deleteRequest = DeleteRequest.newBuilder().setName(SERVICE_NAME)
                 .setAddress(state.getAddress()).build();
             dnsStub.delete(deleteRequest);
             state.debugPrint(String.format("Deactivated server ."));

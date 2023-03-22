@@ -36,6 +36,8 @@ public class UserServerImpl extends UserServiceImplBase {
 	private ServerCache serverCache;
     private ManagedChannel dnsChannel;
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
+    private final String SERVICE_NAME = "DistLedger";
+    private final String NAMING_SERVER_TARGET = "localhost:5001";
 
     public UserServerImpl(ServerState state) {
         this.state = state;
@@ -87,8 +89,8 @@ public class UserServerImpl extends UserServiceImplBase {
     private boolean canPropagate() {
 
         state.debugPrint("Doing lookup");
-        LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier("B").build();
-        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME).setQualifier("B").build();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
         NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(channel);
         LookupResponse response = dnsStub.lookup(request);
         channel.shutdown();

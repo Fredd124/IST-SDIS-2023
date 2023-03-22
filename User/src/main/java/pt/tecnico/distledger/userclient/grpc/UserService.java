@@ -23,7 +23,7 @@ public class UserService {
     private ServerCache serverCache;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
-    private final String DNS_SERVER = "DistLedger";
+    private final String SERVICE_NAME = "DistLedger";
 
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
@@ -35,7 +35,7 @@ public class UserService {
 
     public void lookupService(String qualifier) {
         try {
-            LookupRequest request = LookupRequest.newBuilder().setName(DNS_SERVER).setQualifier(qualifier).build();
+            LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME).setQualifier(qualifier).build();
             debugPrint(String.format("Sent lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
             LookupResponse response = dnsStub.lookup(request);
             debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
