@@ -89,6 +89,7 @@ public class UserServerImpl extends UserServiceImplBase {
                 stub.propagateState(propagateRequest);
                 state.debugPrint("Propagated successfully");
             }
+            return true;
             
 
         } 
@@ -99,9 +100,9 @@ public class UserServerImpl extends UserServiceImplBase {
         catch (StatusRuntimeException e ) {
             serverCache.invalidateEntry("B");
             state.debugPrint("Propagate failed for server in cache.");
-            propagateToSecondary(op);
+            /* propagateToSecondary(op); */
+            return false;
         }
-        return true;
     }
 
     @Override
@@ -273,6 +274,6 @@ public class UserServerImpl extends UserServiceImplBase {
 
     public void shutdownChannels() {
         dnsChannel.shutdown();
-        // TODO : do this for other servers 
+        serverCache.shutdownServers();
     }
 }
