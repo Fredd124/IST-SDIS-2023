@@ -65,7 +65,7 @@ public class UserServerImpl extends UserServiceImplBase {
             else stub = serverCache.getEntry("B").getStub();
 
             try {
-                DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(state.getLasOperation());
+                DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(state.getLastOperation());
                 PropagateOperationRequest propagateOperationRequest = PropagateOperationRequest.newBuilder()
                     .setOperation(operation).build();
                 state.debugPrint("Sending propagate operation request");
@@ -149,6 +149,7 @@ public class UserServerImpl extends UserServiceImplBase {
 			if (!propagateToSecondary()) {
                 responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
                     .asRuntimeException());
+                state.removeLastOp();
                 return;
             }
         }
@@ -164,6 +165,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(e.getMessage()).asRuntimeException());
+            state.removeLastOp();
             return;
         }
         state.debugPrint("Performing operation.");
@@ -194,6 +196,7 @@ public class UserServerImpl extends UserServiceImplBase {
             if (!propagateToSecondary()) {
                 responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
                     .asRuntimeException());
+                state.removeLastOp();
                 return;
             }
         }
@@ -211,6 +214,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription(
                             e.getMessage())
                     .asRuntimeException());
+            state.removeLastOp();
             return;
         }
         state.debugPrint("Performing operation.");
@@ -245,6 +249,7 @@ public class UserServerImpl extends UserServiceImplBase {
             if (!propagateToSecondary()) {
                 responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
                     .asRuntimeException());
+                state.removeLastOp();
                 return;
             }
         }
@@ -260,6 +265,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(e.getMessage()).asRuntimeException());
+            state.removeLastOp();
             return;
         }
         state.debugPrint("Performing operation.");
