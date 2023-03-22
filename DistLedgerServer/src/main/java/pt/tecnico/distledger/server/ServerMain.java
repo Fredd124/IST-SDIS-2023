@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server;
 
 import java.io.IOException;
+import java.util.Scanner;
 
 import io.grpc.BindableService;
 import io.grpc.ManagedChannel;
@@ -51,7 +52,7 @@ public class ServerMain {
         dnsStub.register(request);
         ServerState state = new ServerState(debug, address , qualifier);
         final BindableService adminImpl = new AdminServerImpl(state);
-        final BindableService userImpl = new UserServerImpl(state);
+        final UserServerImpl userImpl = new UserServerImpl(state);
         final BindableService crossServerImpl = new CrossServerImpl(state);
         
 
@@ -67,19 +68,22 @@ public class ServerMain {
             System.out.println("Exception on bind");
         }
 		// Server threads are running in the background.
-		System.out.println("Server started");
+		System.out.println("Server started, press Enter to exit server");
 
 		// Do not exit the main thread. Wait until server is terminated.
-        try {
-            server.awaitTermination();
-            DeleteRequest deleteRequest = DeleteRequest.newBuilder().
-                setAddress(address).setName("DistLedger").build();
-            dnsStub.delete(deleteRequest);
-            dnsChannel.shutdown();
+        Scanner scanner = new Scanner(System.in);
+        boolean exit = false;
+        while(! exit) {
+            String line = scanner.nextLine();
+            if (line.equals("")) exit = true;
         }
-        catch (InterruptedException e) {
-            System.out.println("Exception on close");
-        }
+        scanner.close();
+        DeleteRequest deleteRequest = DeleteRequest.newBuilder().
+            setAddress(address).setName("DistLedger").build();
+        dnsStub.delete(deleteRequest);
+        dnsChannel.shutdown();
+        userImpl.shutdownChannels();
+        server.shutdown();
     }
 
 }
