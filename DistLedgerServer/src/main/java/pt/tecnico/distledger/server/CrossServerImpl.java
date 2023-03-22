@@ -22,6 +22,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import static io.grpc.Status.UNAVAILABLE;
+import static io.grpc.Status.CANCELLED;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -91,7 +92,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         }
         if (state.getLedgerState().size() != request.getLedgerSize()) {
             state.debugPrint("Ledger size is different.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Ledger size is different.").asRuntimeException());
+            responseObserver.onError(CANCELLED.withDescription("Ledger size is different.").asRuntimeException());
             return;
         }
         Operation op = Converter.convertFromGrpc(request.getOperation());
