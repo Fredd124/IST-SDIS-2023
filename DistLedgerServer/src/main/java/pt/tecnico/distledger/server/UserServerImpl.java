@@ -7,7 +7,6 @@ import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
@@ -41,9 +40,9 @@ public class UserServerImpl extends UserServiceImplBase {
     private final String SERVICE_NAME = "DistLedger";
     private final String NAMING_SERVER_TARGET = "localhost:5001";
 
-    public UserServerImpl(ServerState state) {
+    public UserServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
-        serverCache = new ServerCache();
+        this.serverCache = serverCache;
         dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
         dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }

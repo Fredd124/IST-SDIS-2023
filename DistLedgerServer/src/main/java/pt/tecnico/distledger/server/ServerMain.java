@@ -51,9 +51,10 @@ public class ServerMain {
             .setQualifier(qualifier).build();
         dnsStub.register(request);
         ServerState state = new ServerState(debug, address , qualifier);
+        ServerCache serverCache = new ServerCache();
         final BindableService adminImpl = new AdminServerImpl(state);
-        final UserServerImpl userImpl = new UserServerImpl(state);
-        final BindableService crossServerImpl = new CrossServerImpl(state);
+        final UserServerImpl userImpl = new UserServerImpl(state, serverCache);
+        final BindableService crossServerImpl = new CrossServerImpl(state, serverCache);
         
 
         // Create a new server to listen on port

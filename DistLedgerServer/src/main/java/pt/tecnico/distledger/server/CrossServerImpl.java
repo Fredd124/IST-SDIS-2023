@@ -10,6 +10,14 @@ import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLe
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 
 import io.grpc.stub.StreamObserver;
 
@@ -21,9 +29,18 @@ import java.util.stream.Collectors;
 public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
 
     private ServerState state;
+    private ServerCache serverCache;
+    private ManagedChannel dnsChannel;
+    private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
     
-    public CrossServerImpl(ServerState state) {
+    public CrossServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
+        this.serverCache = serverCache;
+        if (state.getLedgerState().size() == 0) {
+            this.askForState();
+        }
+        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }
 
     @Override
@@ -84,5 +101,45 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         PropagateOperationResponse response = PropagateOperationResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+    private void askForState() {
+        String qualifier = state.getQualifier();
+        String other = qualifier.equals("A") ? "B" : "A";
+        state.debugPrint("Asking for state from " + other);
+
+        this.lookupAndAsk(other);
+    }
+
+    private void lookupAndAsk(String qualifier) {
+        DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub; 
+        try {
+            if (! serverCache.hasEntry(qualifier)) {
+                state.debugPrint("Doing lookup");
+                LookupRequest request = LookupRequest.newBuilder().setName("DistLedger")
+                    .setQualifier("B").build();
+                LookupResponse response = dnsStub.lookup(request);
+                String address = response.getServers(0);
+                state.debugPrint("Got server address: " + address);
+                ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
+                stub
+                    = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+                serverCache.addEntry("B", address);
+                state.debugPrint(String.format("Added B qualifier to server cache."));
+            }
+            else stub = serverCache.getEntry("B").getStub();
+
+            /* TODO implemente the provide request */
+            
+
+        } 
+        catch (IndexOutOfBoundsException e) {
+            state.debugPrint("Propagate failed");
+        }
+        catch (StatusRuntimeException e ) {
+            serverCache.invalidateEntry("B");
+            state.debugPrint("Propagate failed for server in cache.");
+            lookupAndAsk(qualifier);
+        }
     }
 }
