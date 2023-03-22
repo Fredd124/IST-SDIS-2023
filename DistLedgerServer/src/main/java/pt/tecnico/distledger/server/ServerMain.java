@@ -53,7 +53,7 @@ public class ServerMain {
         ServerState state = new ServerState(debug, address , qualifier);
         ServerCache serverCache = new ServerCache();
         final BindableService adminImpl = new AdminServerImpl(state);
-        final BindableService userImpl = new UserServerImpl(state, serverCache);
+        final UserServerImpl userImpl = new UserServerImpl(state, serverCache);
         final BindableService crossServerImpl = new CrossServerImpl(state, serverCache);
         
 
