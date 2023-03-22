@@ -41,13 +41,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
         state.debugPrint("Received activate request from admin.");
         try {
             state.activate();
-            ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001")
-                .usePlaintext().build();
-            NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = 
-                NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-            RegisterRequest registerRequest = RegisterRequest.newBuilder().setName("DistLedger")
-                .setAddress(state.getAddress()).setQualifier(state.getQualifier()).build();
-            dnsStub.register(registerRequest);
             state.debugPrint(String.format("Activated server ."));
             ActivateResponse response = ActivateResponse.newBuilder().build();
             responseObserver.onNext(response);
@@ -68,13 +61,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
         state.debugPrint("Received deactivate request from admin.");
         try {
             state.deactivate();
-            ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001")
-                .usePlaintext().build();
-            NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub = 
-                NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-            DeleteRequest deleteRequest = DeleteRequest.newBuilder().setName("DistLedger")
-                .setAddress(state.getAddress()).build();
-            dnsStub.delete(deleteRequest);
             state.debugPrint(String.format("Deactivated server ."));
             DeactivateResponse response = DeactivateResponse.newBuilder()
                 .build();
