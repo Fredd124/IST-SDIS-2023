@@ -28,6 +28,8 @@ import static io.grpc.Status.UNAVAILABLE;
 import static io.grpc.Status.ABORTED;
 
 import java.util.stream.Collectors;
+import java.util.List;
+import java.util.ArrayList;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -39,22 +41,20 @@ public class UserServerImpl extends UserServiceImplBase {
 	private ServerCache serverCache;
     private ManagedChannel dnsChannel;
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
-    private final String SERVICE_NAME = "DistLedger";
-    private final String NAMING_SERVER_TARGET = "localhost:5001";
 
     public UserServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
-        dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
+        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
         dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }
 
-    private boolean propagateToSecondary() {
+    private boolean propagateToSecondary(Operation op) {
         DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub; 
         try {
             if (! serverCache.hasEntry("B")) {
                 state.debugPrint("Doing lookup");
-                LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME)
+                LookupRequest request = LookupRequest.newBuilder().setName("DistLedger")
                     .setQualifier("B").build();
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);
@@ -68,18 +68,20 @@ public class UserServerImpl extends UserServiceImplBase {
             else stub = serverCache.getEntry("B").getStub();
 
             try {
-                DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(state.getLastOperation());
+                DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(op);
                 PropagateOperationRequest propagateOperationRequest = PropagateOperationRequest.newBuilder()
                     .setOperation(operation).build();
                 state.debugPrint("Sending propagate operation request");
                 stub.propagateOperation(propagateOperationRequest);
                 state.debugPrint("Propagated operation successfully");
             } catch (StatusRuntimeException e) {
+                List<Operation> ledger = new ArrayList<> (state.getLedgerState());
+                ledger.add(op);
                 DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
-                    state.getLedgerState().stream()
-                    .map(op -> Converter.convertToGrpc(op)).collect(Collectors.toList())
+                    ledger.stream()
+                    .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
                     .setState(ledgerState).build();
@@ -97,7 +99,7 @@ public class UserServerImpl extends UserServiceImplBase {
         catch (StatusRuntimeException e ) {
             serverCache.invalidateEntry("B");
             state.debugPrint("Propagate failed for server in cache.");
-            propagateToSecondary();
+            propagateToSecondary(op);
         }
         return true;
     }
@@ -143,47 +145,41 @@ public class UserServerImpl extends UserServiceImplBase {
             done = state.createAccount(userId);
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
-			if (!propagateToSecondary()) {
+			if (!propagateToSecondary(done)) {
                 responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
                     .asRuntimeException());
-                state.removeLastOp();
                 return;
             }
-        }
-        catch (NotActiveException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
-                    .asRuntimeException());
-            return;
-        }
-        catch (ServerStateException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(e.getMessage()).asRuntimeException());
-            state.removeLastOp();
-            return;
+            state.debugPrint("Performing operation.");
+            state.doOp(done);
+            CreateAccountResponse response = CreateAccountResponse.newBuilder()
+                        .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
         catch (NotWritableException e) {
             state.debugPrint(
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(ABORTED.withDescription(e.getMessage())
                     .asRuntimeException());
-            return;
         }
-        state.debugPrint("Performing operation.");
-        state.doOp(done);
-        CreateAccountResponse response = CreateAccountResponse.newBuilder()
-                    .build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        catch (NotActiveException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (ServerStateException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(e.getMessage()).asRuntimeException());
+        }
     }
 
     @Override
     public void deleteAccount(DeleteAccountRequest request,
             StreamObserver<DeleteAccountResponse> responseObserver) {
-        
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received delete account request from userId : %s .", userId));
@@ -193,19 +189,29 @@ public class UserServerImpl extends UserServiceImplBase {
             done = state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Created operation to delete account for user %s .", userId));
-            if (!propagateToSecondary()) {
+            if (!propagateToSecondary(done)) {
                 responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
                     .asRuntimeException());
-                state.removeLastOp();
                 return;
             }
+            state.debugPrint("Performing operation.");
+            state.doOp(done);
+            DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
+                        .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
+        catch (NotWritableException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(ABORTED.withDescription(e.getMessage())
+                    .asRuntimeException());
         }
         catch (NotActiveException e) {
             state.debugPrint(
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
                     .asRuntimeException());
-            return;
         }
         catch (ServerStateException e) {
             state.debugPrint(String.format("Threw exception : %s .",
@@ -214,28 +220,12 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription(
                             e.getMessage())
                     .asRuntimeException());
-            state.removeLastOp();
-            return;
         }
-        catch (NotWritableException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(ABORTED.withDescription(e.getMessage())
-                    .asRuntimeException());
-            return;
-        }
-        state.debugPrint("Performing operation.");
-        state.doOp(done);
-        DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
-                    .build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 
     @Override
     public void transferTo(TransferToRequest request,
             StreamObserver<TransferToResponse> responseObserver) {
-        
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
@@ -249,45 +239,40 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
-            if (!propagateToSecondary()) {
+            if (!propagateToSecondary(done)) {
                 responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
                     .asRuntimeException());
-                state.removeLastOp();
                 return;
             }
-        }
-        catch (NotActiveException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
-                    .asRuntimeException());
-            return;
-        }
-        catch (ServerStateException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(e.getMessage()).asRuntimeException());
-            state.removeLastOp();
-            return;
+            state.debugPrint("Performing operation.");
+            state.doOp(done);
+            TransferToResponse response = TransferToResponse.newBuilder()
+                        .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
         catch (NotWritableException e) {
             state.debugPrint(
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(ABORTED.withDescription(e.getMessage())
                     .asRuntimeException());
-            return;
         }
-        state.debugPrint("Performing operation.");
-        state.doOp(done);
-        TransferToResponse response = TransferToResponse.newBuilder()
-                    .build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        catch (NotActiveException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (ServerStateException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(INVALID_ARGUMENT
+                    .withDescription(e.getMessage()).asRuntimeException());
+        }
     }
 
     public void shutdownChannels() {
         dnsChannel.shutdown();
-        serverCache.shutdownServers();
+        // TODO : do this for other servers 
     }
 }
