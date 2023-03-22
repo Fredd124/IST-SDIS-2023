@@ -23,6 +23,7 @@ public class UserService {
     private ServerCache serverCache;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
+    private final String DNS_SERVER = "DistLedger";
 
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
@@ -34,8 +35,8 @@ public class UserService {
 
     public void lookupService(String qualifier) {
         try {
-            LookupRequest request = LookupRequest.newBuilder().setName("DistLedger").setQualifier(qualifier).build();
-            debugPrint(String.format("Sent lookup request to server DistLedger %s .", qualifier));
+            LookupRequest request = LookupRequest.newBuilder().setName(DNS_SERVER).setQualifier(qualifier).build();
+            debugPrint(String.format("Sent lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
             LookupResponse response = dnsStub.lookup(request);
             debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
             String address = response.getServers(0);
@@ -60,7 +61,7 @@ public class UserService {
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
             CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
-            debugPrint(String.format("Sent create account request to server with username %s as argument.", username));
+            debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
             stub.createAccount(request);
             System.out.println("OK");
         } catch (StatusRuntimeException e) {
@@ -80,7 +81,7 @@ public class UserService {
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
             DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
-            debugPrint(String.format("Sent delete account request to server with username %s as argument.", username));
+            debugPrint(String.format("Sent delete account request to server %s with username %s as argument.",qualifier, username));
             stub.deleteAccount(request);
             System.out.println("OK");
         } catch (StatusRuntimeException e) {
@@ -101,7 +102,7 @@ public class UserService {
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
             BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse response;    
-            debugPrint(String.format("Sent balance request to server with username %s as argument.", username));
+            debugPrint(String.format("Sent balance request to server  %s with username %s as argument.",qualifier, username));
             response = stub.balance(request);
             debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
             System.out.println("OK");
@@ -123,7 +124,7 @@ public class UserService {
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
-            debugPrint(String.format("Sent transferTo request to server with from %s, dest %s and amount %d as arguments.", from, dest, amount));
+            debugPrint(String.format("Sent transferTo request to server %s with from %s, dest %s and amount %d as arguments.",qualifier, from, dest, amount));
             stub.transferTo(request);
             System.out.println("OK");
         } catch (StatusRuntimeException e) {

@@ -56,6 +56,7 @@ public class CommandParser {
 
                 case EXIT:
                     adminService.debugPrint("Received exit command from input");
+                    scanner.close();
                     this.shutdown();
                     exit = true;
                     break;
