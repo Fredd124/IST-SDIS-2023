@@ -16,7 +16,7 @@ public class AdminService {
     private ManagedChannel namingServerChannel;
     private ServerCache serverCache;
     private boolean debug;
-    private final String DNS_SERVER = "DistLedger";
+    private final String SERVICE_NAME = "DistLedger";
 
     public AdminService(String target, boolean debug) {
         this.debug = debug;
@@ -28,7 +28,7 @@ public class AdminService {
     private void lookup(String qualifier) {
         try {
             NamingServer.LookupRequest request = NamingServer.LookupRequest.newBuilder().
-                                                    setName(DNS_SERVER).setQualifier(qualifier).build();
+                                                    setName(SERVICE_NAME).setQualifier(qualifier).build();
             debugPrint(String.format("Sent lookup request to server DistLedger %s .", qualifier));
             NamingServer.LookupResponse response = namingServerStub.lookup(request);
             debugPrint(String.format("Received lookup response from server with servers list %s .", 

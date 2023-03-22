@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
+import pt.tecnico.distledger.server.domain.exceptions.NotWritableException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
@@ -38,11 +39,13 @@ public class UserServerImpl extends UserServiceImplBase {
 	private ServerCache serverCache;
     private ManagedChannel dnsChannel;
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
+    private final String SERVICE_NAME = "DistLedger";
+    private final String NAMING_SERVER_TARGET = "localhost:5001";
 
     public UserServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
-        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
         dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }
 
@@ -51,7 +54,7 @@ public class UserServerImpl extends UserServiceImplBase {
         try {
             if (! serverCache.hasEntry("B")) {
                 state.debugPrint("Doing lookup");
-                LookupRequest request = LookupRequest.newBuilder().setName("DistLedger")
+                LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME)
                     .setQualifier("B").build();
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);
@@ -132,17 +135,12 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void createAccount(CreateAccountRequest request,
             StreamObserver<CreateAccountResponse> responseObserver) {
-        if (!state.canWrite()) {
-            state.debugPrint("Threw exception : This server cannot write.");
-            responseObserver.onError(ABORTED
-                    .withDescription("This server cannot write.").asRuntimeException());
-            return;
-        }
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received create account request from userId : %s .", userId));
         Operation done = null;
         try {
+            state.canWrite();
             done = state.createAccount(userId);
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
@@ -168,6 +166,12 @@ public class UserServerImpl extends UserServiceImplBase {
             state.removeLastOp();
             return;
         }
+        catch (NotWritableException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(ABORTED.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
         state.debugPrint("Performing operation.");
         state.doOp(done);
         CreateAccountResponse response = CreateAccountResponse.newBuilder()
@@ -179,17 +183,13 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void deleteAccount(DeleteAccountRequest request,
             StreamObserver<DeleteAccountResponse> responseObserver) {
-        if (!state.canWrite()) {
-            state.debugPrint("Threw exception : This server cannot write.");
-            responseObserver.onError(ABORTED
-                    .withDescription("This server cannot write.").asRuntimeException());
-            return;
-        }
+        
         String userId = request.getUserId();
         state.debugPrint(String.format(
                 "Received delete account request from userId : %s .", userId));
         Operation done = null;
         try {
+            state.canWrite();
             done = state.deleteAccount(userId);
             state.debugPrint(
                     String.format("Created operation to delete account for user %s .", userId));
@@ -217,6 +217,12 @@ public class UserServerImpl extends UserServiceImplBase {
             state.removeLastOp();
             return;
         }
+        catch (NotWritableException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(ABORTED.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
         state.debugPrint("Performing operation.");
         state.doOp(done);
         DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
@@ -228,12 +234,7 @@ public class UserServerImpl extends UserServiceImplBase {
     @Override
     public void transferTo(TransferToRequest request,
             StreamObserver<TransferToResponse> responseObserver) {
-        if (!state.canWrite()) {
-            state.debugPrint("Threw exception : This server cannot write.");
-            responseObserver.onError(ABORTED
-                    .withDescription("This server cannot write.").asRuntimeException());
-            return;
-        }
+        
         String fromUserId = request.getAccountFrom();
         String toUserId = request.getAccountTo();
         int value = request.getAmount();
@@ -242,6 +243,7 @@ public class UserServerImpl extends UserServiceImplBase {
                 fromUserId, toUserId, value));
         Operation done = null;
         try {
+            state.canWrite();
             done = state.transfer(fromUserId, toUserId, value);
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
@@ -267,6 +269,12 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription(e.getMessage()).asRuntimeException());
             state.removeLastOp();
             return;
+        }
+        catch (NotWritableException e) {
+            state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(ABORTED.withDescription(e.getMessage())
+                    .asRuntimeException());
         }
         state.debugPrint("Performing operation.");
         state.doOp(done);

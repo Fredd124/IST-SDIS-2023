@@ -14,21 +14,16 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.GossipRespon
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 
 import java.util.ArrayList;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
 
 public class AdminServerImpl extends AdminServiceImplBase {
 
-    ServerState state;
+    private ServerState state;
 
     public AdminServerImpl(ServerState state) {
         this.state = state;
