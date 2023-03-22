@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 public class ServerState {
 
@@ -18,7 +19,7 @@ public class ServerState {
     private Map<String, Integer> accountMap;
 
     public ServerState(boolean debug, String address, String qualifier) {
-        this.ledger = new ArrayList<>();
+        this.ledger = Collections.synchronizedList(new ArrayList<>());
         this.active = true;
         this.debug = debug;
         this.address = address;
@@ -35,8 +36,10 @@ public class ServerState {
         return this.active;
     }
 
-    public boolean canWrite() {
-        return this.qualifier.equals("A");
+    public void canWrite() throws NotWritableException {
+        if (!this.qualifier.equals("A")) {
+            throw new NotWritableException();
+        } 
     }
 
     private void setActive(boolean active) {
