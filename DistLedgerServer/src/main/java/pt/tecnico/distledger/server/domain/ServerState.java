@@ -161,23 +161,35 @@ public class ServerState {
         for (Operation op : missingOps) {
             if (op.getType().equals("OP_CREATE_ACCOUNT")) {
                 CreateOp createOp = (CreateOp) op;
-                accountMap.put(createOp.getAccount(), 0);
-                ledger.add(createOp);
+                synchronized(this.accountMap) {
+                    accountMap.put(createOp.getAccount(), 0);
+                }
+                synchronized(this.ledger) {
+                    ledger.add(createOp);
+                }
                 debugPrint("Created account: " + createOp.getAccount());
             } 
             else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
                 DeleteOp deleteOp = (DeleteOp) op;
-                accountMap.remove(deleteOp.getAccount());
-                ledger.add(deleteOp);
+                synchronized(this.accountMap) {
+                    accountMap.remove(deleteOp.getAccount());
+                }
+                synchronized(this.ledger) {
+                    ledger.add(deleteOp);
+                }
                 debugPrint("Deleted account: " + deleteOp.getAccount());
             } 
             else if (op.getType().equals("OP_TRANSFER_TO")) {
                 TransferOp transferOp = (TransferOp) op;
-                accountMap.put(transferOp.getAccount(), 
+                synchronized(this.accountMap) {
+                    accountMap.put(transferOp.getAccount(), 
                             accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
-                accountMap.put(transferOp.getDestAccount(), 
+                    accountMap.put(transferOp.getDestAccount(), 
                             accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-                ledger.add(transferOp);
+                }            
+                synchronized(this.ledger) {
+                    ledger.add(transferOp);
+                }
                 debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
             }
         }
