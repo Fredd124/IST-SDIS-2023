@@ -15,8 +15,8 @@ public class UserClientMain {
             }
         }
     
-        final String namingServerTarget = "localhost:5001";
-        UserService service = new UserService(namingServerTarget, debug);
+        final String NAMING_SERVER_TARGET = "localhost:5001";
+        UserService service = new UserService(NAMING_SERVER_TARGET, debug);
         CommandParser parser = new CommandParser(service);
         parser.parseInput();
     }
