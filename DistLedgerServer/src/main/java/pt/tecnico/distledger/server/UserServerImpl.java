@@ -255,4 +255,9 @@ public class UserServerImpl extends UserServiceImplBase {
                     .withDescription(e.getMessage()).asRuntimeException());
         }
     }
+
+    public void shutdownChannels() {
+        dnsChannel.shutdown();
+        // TODO : do this for other servers 
+    }
 }
