@@ -36,11 +36,11 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     public CrossServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
+        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         if (state.getLedgerState().size() == 0) {
             this.askForState();
         }
-        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
-        dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
     }
 
     @Override
@@ -117,27 +117,36 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             if (! serverCache.hasEntry(qualifier)) {
                 state.debugPrint("Doing lookup");
                 LookupRequest request = LookupRequest.newBuilder().setName("DistLedger")
-                    .setQualifier("B").build();
+                    .setQualifier(qualifier).build();
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);
                 state.debugPrint("Got server address: " + address);
                 ManagedChannel channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
                 stub
                     = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
-                serverCache.addEntry("B", address);
+                serverCache.addEntry(qualifier, address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
-            else stub = serverCache.getEntry("B").getStub();
+            else stub = serverCache.getEntry(qualifier).getStub();
 
-            /* TODO implemente the provide request */
-            
+            ProvideStateRequest request = ProvideStateRequest.newBuilder().build();
+            ProvideStateResponse response = stub.provideState(request);
+            DistLedgerCommonDefinitions.LedgerState state = response.getState();
+            List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
+                .collect(Collectors.toList());
+            this.state.debugPrint(ops.size() + "|---|" + this.state.getLedgerState().size());
+            if (ops.size() > this.state.getLedgerState().size()) {
+                List<Operation> missingOps = ops.subList(this.state.getLedgerState().size(), ops.size());
+                this.state.debugPrint("Missing ops: " + missingOps.size());
+                this.state.doOpList(missingOps);
+            }
 
         } 
         catch (IndexOutOfBoundsException e) {
-            state.debugPrint("Propagate failed");
+            state.debugPrint("Provide failed");
         }
         catch (StatusRuntimeException e ) {
-            serverCache.invalidateEntry("B");
+            serverCache.invalidateEntry(qualifier);
             state.debugPrint("Propagate failed for server in cache.");
             lookupAndAsk(qualifier);
         }

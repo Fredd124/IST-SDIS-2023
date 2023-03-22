@@ -101,19 +101,17 @@ public class ServerState {
         return ledger.get(ledger.size() - 1);
     }
 
-    public synchronized void createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
+    public synchronized Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
         } 
         else if (this.containsUser(userId)) {
             throw new UserAlreadyExistsEception();
         }
-        accountMap.put(userId, 0);
-        CreateOp createOp = new CreateOp(userId);
-        ledger.add(createOp);
+        return new CreateOp(userId);
     }
 
-    public synchronized void deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
+    public synchronized Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
             BalanceNotZeroException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
@@ -127,12 +125,10 @@ public class ServerState {
         else if (this.getBalance(userId) != 0) {
             throw new BalanceNotZeroException();
         }
-        accountMap.remove(userId);
-        DeleteOp deleteOp = new DeleteOp(userId);
-        ledger.add(deleteOp);
+       return new DeleteOp(userId);
     }
 
-    public synchronized void transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
+    public synchronized Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
             SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
                 SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
                     UserDoesNotExistException {
@@ -154,10 +150,7 @@ public class ServerState {
         else if (amount <= 0) {
             throw new InvalidBalanceAmountException();
         }
-        accountMap.put(fromAccount, accountMap.get(fromAccount) - amount);
-        accountMap.put(toAccount, accountMap.get(toAccount) + amount);
-        TransferOp transferOp = new TransferOp(fromAccount, toAccount, amount);
-        ledger.add(transferOp);
+        return new TransferOp(fromAccount, toAccount, amount);
     }
 
     public void doOp(Operation op) {
