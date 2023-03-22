@@ -97,6 +97,10 @@ public class ServerState {
         accountMap.put("broker", 1000);
     }
 
+    public synchronized Operation getLasOperation() {
+        return ledger.get(ledger.size() - 1);
+    }
+
     public synchronized void createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
@@ -156,42 +160,34 @@ public class ServerState {
         ledger.add(transferOp);
     }
 
+    public void doOp(Operation op) {
+        if (op.getType().equals("OP_CREATE_ACCOUNT")) {
+            CreateOp createOp = (CreateOp) op;
+            accountMap.put(createOp.getAccount(), 0);
+            ledger.add(createOp);
+            debugPrint("Created account: " + createOp.getAccount());
+        } 
+        else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
+            DeleteOp deleteOp = (DeleteOp) op;
+            accountMap.remove(deleteOp.getAccount());
+            ledger.add(deleteOp);
+            debugPrint("Deleted account: " + deleteOp.getAccount());
+        } 
+        else if (op.getType().equals("OP_TRANSFER_TO")) {
+            TransferOp transferOp = (TransferOp) op;
+            accountMap.put(transferOp.getAccount(), 
+                        accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
+            accountMap.put(transferOp.getDestAccount(), 
+                        accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
+            ledger.add(transferOp);
+            debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
+        }
+    }
+
     public void doOpList(List<Operation> missingOps) {
         //debugPrint("got here");
         for (Operation op : missingOps) {
-            if (op.getType().equals("OP_CREATE_ACCOUNT")) {
-                CreateOp createOp = (CreateOp) op;
-                synchronized(this.accountMap) {
-                    accountMap.put(createOp.getAccount(), 0);
-                }
-                synchronized(this.ledger) {
-                    ledger.add(createOp);
-                }
-                debugPrint("Created account: " + createOp.getAccount());
-            } 
-            else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
-                DeleteOp deleteOp = (DeleteOp) op;
-                synchronized(this.accountMap) {
-                    accountMap.remove(deleteOp.getAccount());
-                }
-                synchronized(this.ledger) {
-                    ledger.add(deleteOp);
-                }
-                debugPrint("Deleted account: " + deleteOp.getAccount());
-            } 
-            else if (op.getType().equals("OP_TRANSFER_TO")) {
-                TransferOp transferOp = (TransferOp) op;
-                synchronized(this.accountMap) {
-                    accountMap.put(transferOp.getAccount(), 
-                            accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
-                    accountMap.put(transferOp.getDestAccount(), 
-                            accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-                }            
-                synchronized(this.ledger) {
-                    ledger.add(transferOp);
-                }
-                debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
-            }
+            this.doOp(op);
         }
     }
 }
