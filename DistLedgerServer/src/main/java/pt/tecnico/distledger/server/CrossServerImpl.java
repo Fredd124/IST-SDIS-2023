@@ -143,7 +143,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
 
         } 
         catch (IndexOutOfBoundsException e) {
-            state.debugPrint("Propagate failed");
+            state.debugPrint("Provide failed");
         }
         catch (StatusRuntimeException e ) {
             serverCache.invalidateEntry(qualifier);
