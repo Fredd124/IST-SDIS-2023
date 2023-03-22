@@ -80,7 +80,7 @@ public class UserServerImpl extends UserServiceImplBase {
         catch (StatusRuntimeException e ) {
             serverCache.invalidateEntry("B");
             state.debugPrint("Propagate failed for server in cache.");
-            /* propagateToSecondary(); */
+            propagateToSecondary();
         }
     }
 

@@ -20,7 +20,7 @@ public class NamingServerServiceImpl extends NamingServerServiceImplBase {
     private ServerState state;
 
     public NamingServerServiceImpl(boolean isDebug) {
-        this.state = new ServerState(isDebug);
+        this.state = new ServerState(true);
     }
 
     public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {

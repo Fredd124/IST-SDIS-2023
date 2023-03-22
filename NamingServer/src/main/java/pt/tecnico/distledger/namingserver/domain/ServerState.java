@@ -1,7 +1,5 @@
 package pt.tecnico.distledger.namingserver.domain;
 
-import pt.tecnico.distledger.namingserver.domain.ServerEntry;
-import pt.tecnico.distledger.namingserver.domain.ServiceEntry;
 import pt.tecnico.distledger.namingserver.domain.exceptions.*;
 import java.util.HashMap;
 import java.util.List;

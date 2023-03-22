@@ -39,7 +39,7 @@ public class AdminService {
     public void activate(String server) {
         try {
             AdminServiceGrpc.AdminServiceBlockingStub stub = lookup(server);
-
+            
             AdminDistLedger.ActivateRequest request = AdminDistLedger.ActivateRequest.newBuilder().build();
             debugPrint("Sending activate request to server...");
             stub.activate(request);
@@ -48,8 +48,10 @@ public class AdminService {
 
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         } catch (NoServerFoundException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getMessage());
         }
     }
@@ -66,8 +68,10 @@ public class AdminService {
 
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         } catch (NoServerFoundException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getMessage());
         }
     }
@@ -84,8 +88,10 @@ public class AdminService {
 
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         } catch (NoServerFoundException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getMessage());
         }
     }
@@ -104,8 +110,10 @@ public class AdminService {
 
             channel.shutdownNow();
         } catch (StatusRuntimeException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
         } catch (NoServerFoundException e) {
+            debugPrint(String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getMessage());
         }
 

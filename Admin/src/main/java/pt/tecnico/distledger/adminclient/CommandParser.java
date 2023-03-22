@@ -110,8 +110,6 @@ public class CommandParser {
 
     @SuppressWarnings("unused")
     private void gossip(String line){
-        /* TODO Phase-3 */
-        //System.out.println("TODO: implement gossip command (only for Phase-3)");
         //adminService.gossip();
     }
     private void printUsage() {
