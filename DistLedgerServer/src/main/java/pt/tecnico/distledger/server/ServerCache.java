@@ -23,4 +23,9 @@ public class ServerCache {
         return entries.get(qualifier);
     }
 
+    public void shutdownServers() {
+        for (ServerCommunicationEntry entry : entries.values()) {
+            entry.shutdown();
+        }
+    }
 }

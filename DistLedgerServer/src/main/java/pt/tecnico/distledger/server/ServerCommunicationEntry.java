@@ -19,4 +19,7 @@ public class ServerCommunicationEntry {
         return stub;
     }
 
+    public void shutdown() {
+        channel.shutdown();
+    }
 }

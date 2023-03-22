@@ -169,6 +169,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(ABORTED.withDescription(e.getMessage())
                     .asRuntimeException());
+            return;
         }
         state.debugPrint("Performing operation.");
         state.doOp(done);
@@ -218,6 +219,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(ABORTED.withDescription(e.getMessage())
                     .asRuntimeException());
+            return;
         }
         state.debugPrint("Performing operation.");
         state.doOp(done);
@@ -269,6 +271,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(ABORTED.withDescription(e.getMessage())
                     .asRuntimeException());
+            return;
         }
         state.debugPrint("Performing operation.");
         state.doOp(done);
@@ -280,6 +283,6 @@ public class UserServerImpl extends UserServiceImplBase {
 
     public void shutdownChannels() {
         dnsChannel.shutdown();
-        // TODO : do this for other servers 
+        serverCache.shutdownServers();
     }
 }
