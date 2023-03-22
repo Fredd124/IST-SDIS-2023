@@ -146,7 +146,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             state.debugPrint("Propagate failed");
         }
         catch (StatusRuntimeException e ) {
-            serverCache.invalidateEntry("B");
+            serverCache.invalidateEntry(qualifier);
             state.debugPrint("Propagate failed for server in cache.");
             lookupAndAsk(qualifier);
         }
