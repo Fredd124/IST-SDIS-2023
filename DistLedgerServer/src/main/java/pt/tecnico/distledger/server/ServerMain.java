@@ -15,6 +15,7 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRe
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 public class ServerMain {
 
+    private final static String SERVICE_NAME = "DistLedger";
     public static void main(String[] args) {
 
         // receive and print arguments
@@ -43,7 +44,6 @@ public class ServerMain {
         }
 
         final String NAMING_SERVER_TARGET = "localhost:5001";
-        final String SERVICE_NAME = "DistLedger";
         ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
         NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         final String address = "localhost:" + port;
@@ -78,13 +78,7 @@ public class ServerMain {
         boolean exit = false;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                DeleteRequest deleteRequest = DeleteRequest.newBuilder().
-                    setAddress(address).setName("DistLedger").build();
-                dnsStub.delete(deleteRequest);
-                dnsChannel.shutdown();
-                userImpl.shutdownChannels();
-                crossServerImpl.shutdownChannel();
-                server.shutdown();
+                cleanServer(userImpl, crossServerImpl, dnsStub, dnsChannel, server, address);
             }
         });
         while(! exit) {
@@ -92,13 +86,18 @@ public class ServerMain {
             if (line.equals("")) exit = true;
         }
         scanner.close();
-        DeleteRequest deleteRequest = DeleteRequest.newBuilder().
-            setAddress(address).setName("DistLedger").build();
-        dnsStub.delete(deleteRequest);
-        dnsChannel.shutdown();
-        userImpl.shutdownChannels();
-        crossServerImpl.shutdownChannel();
-        server.shutdown();
+        cleanServer(userImpl, crossServerImpl, dnsStub, dnsChannel, server, address);
+    }
+
+    private static void cleanServer(UserServerImpl userImpl, CrossServerImpl crossServerImpl,
+        NamingServerServiceBlockingStub dnsStub, ManagedChannel dnsChannel, Server server, String address) {
+            DeleteRequest deleteRequest = DeleteRequest.newBuilder().
+                setAddress(address).setName(SERVICE_NAME).build();
+            dnsStub.delete(deleteRequest);
+            dnsChannel.shutdown();
+            userImpl.shutdownChannels();
+            crossServerImpl.shutdownChannel();
+            server.shutdown();
     }
 
 }
