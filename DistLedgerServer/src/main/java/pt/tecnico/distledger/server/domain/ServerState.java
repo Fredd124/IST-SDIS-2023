@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collections;
-import java.util.Iterator;
 
 public class ServerState {
 
@@ -82,14 +81,8 @@ public class ServerState {
         return accountMap.get(userId);
     }
 
-    public List<Operation> getLedgerState() {
-        List<Operation> copy = new ArrayList<>();
-        synchronized(this.ledger) {
-            Iterator<Operation> i = this.ledger.iterator(); 
-            while (i.hasNext())
-                copy.add(i.next());
-        }
-        return copy;
+    public synchronized List<Operation> getLedgerState() {
+        return this.ledger;
     }
 
     public synchronized void setLedgerState(List<Operation> ops) {
