@@ -2,12 +2,14 @@ package pt.tecnico.distledger.namingserver.domain;
 
 import pt.tecnico.distledger.namingserver.domain.exceptions.*;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class ServerState {
     
-    private HashMap<String, ServiceEntry> services = new HashMap<>();
+    private Map<String, ServiceEntry> services = Collections.synchronizedMap(new HashMap<>());
     private boolean isDebug;
 
     public ServerState(boolean isDebug) {

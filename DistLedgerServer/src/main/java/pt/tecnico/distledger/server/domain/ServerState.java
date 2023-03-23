@@ -28,11 +28,11 @@ public class ServerState {
         this.debug = debug;
         this.address = address;
         this.qualifier = qualifier;
-        this.accountMap = new HashMap<>();
+        this.accountMap = Collections.synchronizedMap(new HashMap<>());
         createBroker();
     }
 
-    public boolean isActive() {
+    public synchronized boolean isActive() {
         return this.active;
     }
 
@@ -72,7 +72,7 @@ public class ServerState {
         if (debug) System.err.println(message);
     }
 
-    public synchronized int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
+    public int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
         } 
@@ -96,15 +96,15 @@ public class ServerState {
         this.ledger = ops;
     }
 
-    public synchronized boolean containsUser(String userId) {
+    public boolean containsUser(String userId) {
         return accountMap.containsKey(userId);
     }
 
-    public synchronized void createBroker() { 
+    public void createBroker() { 
         accountMap.put(BROKER, BROKER_INIT_VALUE);
     }
 
-    public synchronized Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
+    public Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
         } 
@@ -114,12 +114,12 @@ public class ServerState {
         return new CreateOp(userId);
     }
 
-    public synchronized Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
+    public Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
             BalanceNotZeroException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
         } 
-        else if (userId.equals("broker")) {
+        else if (userId.equals(BROKER)) {
             throw new BrokerCantBeDeletedException();
         }
         else if (!this.containsUser(userId)) {
@@ -131,7 +131,7 @@ public class ServerState {
         return new DeleteOp(userId);
     }
 
-    public synchronized Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
+    public Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
             SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
                 SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
                     UserDoesNotExistException {
@@ -156,7 +156,7 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount);
     }
 
-    public synchronized void doOp(Operation op) {
+    public void doOp(Operation op) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
@@ -180,7 +180,7 @@ public class ServerState {
         }
     }
 
-    public synchronized void doOpList(List<Operation> missingOps) {
+    public void doOpList(List<Operation> missingOps) {
         for (Operation op : missingOps) {
             this.doOp(op);
         }
