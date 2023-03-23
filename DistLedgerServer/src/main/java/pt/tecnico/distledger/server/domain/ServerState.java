@@ -18,6 +18,9 @@ public class ServerState {
     private boolean active;
     private boolean debug;
     private Map<String, Integer> accountMap;
+    private final String BROKER = "broker";
+    private final Integer BROKER_INIT_VALUE = 1000;
+    private final String MAIN_SERVER_QUALIFIER = "A";
 
     public ServerState(boolean debug, String address, String qualifier) {
         this.ledger = Collections.synchronizedList(new ArrayList<>());
@@ -34,7 +37,7 @@ public class ServerState {
     }
 
     public void canWrite() throws NotWritableException {
-        if (!this.qualifier.equals("A")) {
+        if (!this.qualifier.equals(MAIN_SERVER_QUALIFIER)) {
             throw new NotWritableException();
         } 
     }
@@ -97,8 +100,8 @@ public class ServerState {
         return accountMap.containsKey(userId);
     }
 
-    public synchronized void createBroker() { // broker
-        accountMap.put("broker", 1000);
+    public synchronized void createBroker() { 
+        accountMap.put(BROKER, BROKER_INIT_VALUE);
     }
 
     public synchronized Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
@@ -184,7 +187,6 @@ public class ServerState {
     }
 
     public void doOpList(List<Operation> missingOps) {
-        //debugPrint("got here");
         for (Operation op : missingOps) {
             this.doOp(op);
         }
