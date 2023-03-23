@@ -18,6 +18,7 @@
 		<module>Admin</module>
 		<module>DistLedgerServer</module>
         <module>NamingServer</module>
+        <module>Utils</module> 
 
 		<!-- This one should only be used in phases 2 and 3
 		 <module>NamingServer</module>-->

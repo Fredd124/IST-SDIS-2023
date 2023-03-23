@@ -1,6 +1,6 @@
 package pt.tecnico.distledger.userclient.grpc;
 
-import pt.tecnico.distledger.userclient.ServerCache;
+import pt.tecnico.distledger.utils.ServerCache;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
@@ -34,18 +34,16 @@ public class UserService {
     }
 
     public void lookupService(String qualifier) {
-        try {
-            LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME).setQualifier(qualifier).build();
-            debugPrint(String.format("Sent lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
-            LookupResponse response = dnsStub.lookup(request);
-            debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
-            String address = response.getServers(0);
-            serverCache.addEntry(qualifier, address);
-        } catch (IndexOutOfBoundsException e) {
-            debugPrint(
-                    String.format("Caught exception : %s .", e.getMessage()));
+        LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME).setQualifier(qualifier).build();
+        debugPrint(String.format("Sent lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
+        LookupResponse response = dnsStub.lookup(request);
+        debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
+        if (response.getServersCount() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
-        } 
+            return;
+        }
+        String address = response.getServers(0);
+        serverCache.addEntry(qualifier, address);
     }
 
     public void namingServerServiceChannelShutdown() {
@@ -56,10 +54,10 @@ public class UserService {
 
     public void createAccount(String qualifier, String username) {
         try {
-            if (!serverCache.hasEntry(qualifier)) {
+            if (!serverCache.userHasEntry(qualifier)) {
                 lookupService(qualifier);
             } 
-            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
+            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
             debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
             stub.createAccount(request);
@@ -76,10 +74,10 @@ public class UserService {
 
     public void deleteAccount(String qualifier, String username) {
         try {
-            if (!serverCache.hasEntry(qualifier)) {
+            if (!serverCache.userHasEntry(qualifier)) {
                 lookupService(qualifier);
             } 
-            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
+            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
             debugPrint(String.format("Sent delete account request to server %s with username %s as argument.",qualifier, username));
             stub.deleteAccount(request);
@@ -96,10 +94,10 @@ public class UserService {
 
     public void balance(String qualifier, String username) {
         try {
-            if (!serverCache.hasEntry(qualifier)) {
+            if (!serverCache.userHasEntry(qualifier)) {
                 lookupService(qualifier);
             } 
-            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
+            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse response;    
             debugPrint(String.format("Sent balance request to server  %s with username %s as argument.",qualifier, username));
@@ -119,10 +117,10 @@ public class UserService {
 
     public void transferTo(String qualifier, String from, String dest, Integer amount) {        
         try {
-            if (!serverCache.hasEntry(qualifier)) {
+            if (!serverCache.userHasEntry(qualifier)) {
                 lookupService(qualifier);
             } 
-            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.getEntry(qualifier).getStub();            
+            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
             debugPrint(String.format("Sent transferTo request to server %s with from %s, dest %s and amount %d as arguments.",qualifier, from, dest, amount));
             stub.transferTo(request);

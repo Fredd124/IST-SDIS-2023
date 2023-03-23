@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collections;
-import java.util.Iterator;
 
 public class ServerState {
 
@@ -28,11 +27,11 @@ public class ServerState {
         this.debug = debug;
         this.address = address;
         this.qualifier = qualifier;
-        this.accountMap = new HashMap<>();
+        this.accountMap = Collections.synchronizedMap(new HashMap<>());
         createBroker();
     }
 
-    public boolean isActive() {
+    public synchronized boolean isActive() {
         return this.active;
     }
 
@@ -82,14 +81,8 @@ public class ServerState {
         return accountMap.get(userId);
     }
 
-    public List<Operation> getLedgerState() {
-        List<Operation> copy = new ArrayList<>();
-        synchronized(this.ledger) {
-            Iterator<Operation> i = this.ledger.iterator(); 
-            while (i.hasNext())
-                copy.add(i.next());
-        }
-        return copy;
+    public synchronized List<Operation> getLedgerState() {
+        return this.ledger;
     }
 
     public synchronized void setLedgerState(List<Operation> ops) {
@@ -100,11 +93,11 @@ public class ServerState {
         return accountMap.containsKey(userId);
     }
 
-    public synchronized void createBroker() { 
+    public void createBroker() { 
         accountMap.put(BROKER, BROKER_INIT_VALUE);
     }
 
-    public synchronized Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
+    public Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
         } 
@@ -114,12 +107,12 @@ public class ServerState {
         return new CreateOp(userId);
     }
 
-    public synchronized Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
+    public Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
             BalanceNotZeroException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
         } 
-        else if (userId.equals("broker")) {
+        else if (userId.equals(BROKER)) {
             throw new BrokerCantBeDeletedException();
         }
         else if (!this.containsUser(userId)) {
@@ -131,7 +124,7 @@ public class ServerState {
         return new DeleteOp(userId);
     }
 
-    public synchronized Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
+    public Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
             SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
                 SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
                     UserDoesNotExistException {
@@ -160,17 +153,13 @@ public class ServerState {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
-            synchronized(this.ledger) {
-                ledger.add(createOp);
-            }
+            ledger.add(createOp);
             debugPrint("Created account: " + createOp.getAccount());
         } 
         else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
             DeleteOp deleteOp = (DeleteOp) op;
             accountMap.remove(deleteOp.getAccount());
-            synchronized(this.ledger) {
-                ledger.add(deleteOp);
-            }
+            ledger.add(deleteOp);
             debugPrint("Deleted account: " + deleteOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
@@ -179,9 +168,7 @@ public class ServerState {
                         accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
             accountMap.put(transferOp.getDestAccount(), 
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-            synchronized(this.ledger) {
-                ledger.add(transferOp);
-            }
+            ledger.add(transferOp);
             debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
         }
     }

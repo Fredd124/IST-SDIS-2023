@@ -37,6 +37,12 @@
 			<artifactId>Contract</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
+
+        <dependency>
+			<groupId>pt.tecnico.sdis.2023.A29</groupId>
+			<artifactId>Utils</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -74,5 +80,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

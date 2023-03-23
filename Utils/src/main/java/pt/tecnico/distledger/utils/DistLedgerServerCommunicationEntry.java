@@ -1,25 +1,26 @@
-package pt.tecnico.distledger.server;
+package pt.tecnico.distledger.utils;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub;
 
-public class ServerCommunicationEntry {
+public class DistLedgerServerCommunicationEntry {
     
     private ManagedChannel channel;
-    private DistLedgerCrossServerServiceBlockingStub stub;
-
-    public ServerCommunicationEntry(String address) {
+    private DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub;
+    
+    public DistLedgerServerCommunicationEntry(String address) {
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         stub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
     }
 
-    public DistLedgerCrossServerServiceBlockingStub getStub() {
+    public DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub getStub() {
         return stub;
     }
 
     public void shutdown() {
-        channel.shutdown();
+        channel.shutdownNow();
     }
 }
+
+
