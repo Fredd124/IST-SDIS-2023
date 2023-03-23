@@ -1,21 +1,21 @@
-package pt.tecnico.distledger.userclient;
+package pt.tecnico.distledger.utils;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 
-public class ServerCommunicationEntry {
-    
+public class UserServerCommunicationEntry {
+
     private ManagedChannel channel;
     private UserServiceGrpc.UserServiceBlockingStub stub;
-
-    public ServerCommunicationEntry(String address) {
+    
+    public UserServerCommunicationEntry(String address) {
         channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build();
         stub = UserServiceGrpc.newBlockingStub(channel);
     }
 
     public UserServiceGrpc.UserServiceBlockingStub getStub() {
-        return stub;
+        return this.stub;
     }
 
     public void shutdown() {

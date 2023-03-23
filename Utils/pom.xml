@@ -5,7 +5,7 @@
 	<!-- http://maven.apache.org/pom.html#Quick_Overview -->
 
 	<groupId>pt.tecnico.sdis.2023.A29</groupId>
-	<artifactId>DistLedgerServer</artifactId>
+	<artifactId>Utils</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>${project.artifactId}</name>
@@ -19,29 +19,18 @@
 
 		<version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
 		<version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
+    </properties>
 
-		<mainclass>pt.tecnico.distledger.server.ServerMain</mainclass>
-		<server.port>2001</server.port>
-		<server.qual>A</server.qual>
-
-	</properties>
-
-	<dependencies>
+    <dependencies>
 		<!-- contract brings gRPC dependencies with it -->
 		<dependency>
 			<groupId>pt.tecnico.sdis.2023.A29</groupId>
 			<artifactId>Contract</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
-
-        <dependency>
-			<groupId>pt.tecnico.sdis.2023.A29</groupId>
-			<artifactId>Utils</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-		</dependency>
 	</dependencies>
-
-	<build>
+    
+    	<build>
 		<plugins>
 			<!-- Plug-in used to compile the sources of your project. Java 9 requires 
 				at least version 3.7.0 to properly handle modules. -->
@@ -67,10 +56,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<mainClass>${mainclass}</mainClass>
 					<arguments>
-						<argument>${server.port}</argument>
-						<argument>${server.qual}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

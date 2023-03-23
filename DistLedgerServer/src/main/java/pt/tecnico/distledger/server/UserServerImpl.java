@@ -4,6 +4,7 @@ import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
 import pt.tecnico.distledger.server.domain.exceptions.NotWritableException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.utils.ServerCache;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
@@ -43,6 +44,7 @@ public class UserServerImpl extends UserServiceImplBase {
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
     private final String NAMING_SERVER_TARGET = "localhost:5001";
     private final String SERVICE_NAME = "DistLedger";
+    private final String SECONDARY_SERVER_QUALIFIER = "B";
 
     public UserServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
@@ -53,19 +55,22 @@ public class UserServerImpl extends UserServiceImplBase {
 
     private boolean propagateToSecondary(Operation op) {
         try {
-            if (! serverCache.hasEntry("B")) {
+            if (! serverCache.distLedgerHasEntry(SECONDARY_SERVER_QUALIFIER)) {
                 state.debugPrint("Doing lookup");
                 LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME)
-                    .setQualifier("B").build();
+                    .setQualifier(SECONDARY_SERVER_QUALIFIER).build();
                 LookupResponse response = dnsStub.lookup(request);
+                if (response.getServersCount() == 0) {
+                    state.debugPrint("No servers found. Propagate request failed.");
+                    return false;
+                }
                 String address = response.getServers(0);
                 state.debugPrint("Got server address: " + address);
-                serverCache.addEntry("B", address);
+                serverCache.addEntry(SECONDARY_SERVER_QUALIFIER, address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
-                 = serverCache.getEntry("B").getStub();
-
+                 = serverCache.distLedgerGetEntry(SECONDARY_SERVER_QUALIFIER).getStub();
             try {
                 DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(op);
                 PropagateOperationRequest propagateOperationRequest = PropagateOperationRequest.newBuilder()
@@ -74,7 +79,7 @@ public class UserServerImpl extends UserServiceImplBase {
                 stub.propagateOperation(propagateOperationRequest);
                 state.debugPrint("Propagated operation successfully");
             } catch (StatusRuntimeException e) {
-                List<Operation> ledger = new ArrayList<> (state.getLedgerState());
+                List<Operation> ledger = new ArrayList<>(state.getLedgerState());
                 ledger.add(op);
                 DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
@@ -89,17 +94,10 @@ public class UserServerImpl extends UserServiceImplBase {
                 state.debugPrint("Propagated successfully");
             }
             return true;
-            
-
-        } 
-        catch (IndexOutOfBoundsException e) {
-            state.debugPrint("Propagate failed");
-            return false;
-        }
+        }         
         catch (StatusRuntimeException e ) {
-            serverCache.invalidateEntry("B");
+            serverCache.removeEntry(SECONDARY_SERVER_QUALIFIER);
             state.debugPrint("Propagate failed for server in cache.");
-            /* propagateToSecondary(op); */
             return false;
         }
     }
@@ -146,7 +144,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
 			if (!propagateToSecondary(done)) {
-                responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
+                responseObserver.onError(UNAVAILABLE.withDescription("The secondary server is not available.")
                     .asRuntimeException());
                 return;
             }
@@ -190,7 +188,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(
                     String.format("Created operation to delete account for user %s .", userId));
             if (!propagateToSecondary(done)) {
-                responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
+                responseObserver.onError(UNAVAILABLE.withDescription("The secondary server is not available.")
                     .asRuntimeException());
                 return;
             }
@@ -240,7 +238,7 @@ public class UserServerImpl extends UserServiceImplBase {
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
             if (!propagateToSecondary(done)) {
-                responseObserver.onError(UNAVAILABLE.withDescription("Propagate failed")
+                responseObserver.onError(UNAVAILABLE.withDescription("The secondary server is not available.")
                     .asRuntimeException());
                 return;
             }
