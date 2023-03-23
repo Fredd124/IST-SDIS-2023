@@ -125,7 +125,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             }
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub 
                 = serverCache.getEntry(qualifier).getStub();
-
             ProvideStateRequest request = ProvideStateRequest.newBuilder().build();
             ProvideStateResponse response = stub.provideState(request);
             DistLedgerCommonDefinitions.LedgerState state = response.getState();

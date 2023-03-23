@@ -74,6 +74,17 @@ public class ServerMain {
 		// Do not exit the main thread. Wait until server is terminated.
         Scanner scanner = new Scanner(System.in);
         boolean exit = false;
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                DeleteRequest deleteRequest = DeleteRequest.newBuilder().
+                    setAddress(address).setName("DistLedger").build();
+                dnsStub.delete(deleteRequest);
+                dnsChannel.shutdown();
+                userImpl.shutdownChannels();
+                crossServerImpl.shutdownChannel();
+                server.shutdown();
+            }
+        });
         while(! exit) {
             String line = scanner.nextLine();
             if (line.equals("")) exit = true;

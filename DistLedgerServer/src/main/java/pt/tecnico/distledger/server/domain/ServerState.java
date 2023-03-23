@@ -29,10 +29,6 @@ public class ServerState {
         createBroker();
     }
 
-    public boolean getActive() {
-        return this.active;
-    }
-
     public boolean isActive() {
         return this.active;
     }
@@ -105,14 +101,6 @@ public class ServerState {
         accountMap.put("broker", 1000);
     }
 
-    public synchronized Operation getLastOperation() {
-        return ledger.get(ledger.size() - 1);
-    }
-
-    public synchronized void removeLastOp() {
-        ledger.remove(ledger.size() - 1);
-    }
-
     public synchronized Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
@@ -120,9 +108,7 @@ public class ServerState {
         else if (this.containsUser(userId)) {
             throw new UserAlreadyExistsEception();
         }
-        CreateOp op = new CreateOp(userId);
-        ledger.add(op);
-        return op;
+        return new CreateOp(userId);
     }
 
     public synchronized Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
@@ -139,9 +125,7 @@ public class ServerState {
         else if (this.getBalance(userId) != 0) {
             throw new BalanceNotZeroException();
         }
-        DeleteOp op = new DeleteOp(userId);
-        ledger.add(op);
-        return op;
+        return new DeleteOp(userId);
     }
 
     public synchronized Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
@@ -166,9 +150,7 @@ public class ServerState {
         else if (amount <= 0) {
             throw new InvalidBalanceAmountException();
         }
-        TransferOp op = new TransferOp(fromAccount, toAccount, amount);
-        ledger.add(op);
-        return op;
+        return new TransferOp(fromAccount, toAccount, amount);
     }
 
     public void doOp(Operation op) {
