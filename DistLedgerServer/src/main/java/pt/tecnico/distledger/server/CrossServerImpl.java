@@ -33,11 +33,13 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     private ServerCache serverCache;
     private ManagedChannel dnsChannel;
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
+    private final String NAMING_SERVER_TARGET = "localhost:5001";
+    private final String SERVICE_NAME = "DistLedger";
     
     public CrossServerImpl(ServerState state, ServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
-        dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
         dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         if (state.getLedgerState().size() == 0) {
             this.askForState();
@@ -115,7 +117,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         try {
             if (! serverCache.hasEntry(qualifier)) {
                 state.debugPrint("Doing lookup");
-                LookupRequest request = LookupRequest.newBuilder().setName("DistLedger")
+                LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME)
                     .setQualifier(qualifier).build();
                 LookupResponse response = dnsStub.lookup(request);
                 String address = response.getServers(0);

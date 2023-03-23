@@ -31,7 +31,6 @@ public class ServerState {
         if (!services.containsKey(serviceName)) {
             addService(serviceName);
         } 
-
         ServiceEntry serviceEntry = getService(serviceName);
         for (ServerEntry server: serviceEntry.getServers()) {
             if (server.getQualifier().equals(qualifier) || server.getAddress().equals(address)) {

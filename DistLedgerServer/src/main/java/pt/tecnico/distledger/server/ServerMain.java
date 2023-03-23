@@ -42,12 +42,14 @@ public class ServerMain {
             }
         }
 
-        ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget("localhost:5001").usePlaintext().build();
+        final String NAMING_SERVER_TARGET = "localhost:5001";
+        final String SERVICE_NAME = "DistLedger";
+        ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
         NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         final String address = "localhost:" + port;
         RegisterRequest request = RegisterRequest.newBuilder()
             .setAddress(address)
-            .setName("DistLedger")
+            .setName(SERVICE_NAME)
             .setQualifier(qualifier).build();
         dnsStub.register(request);
         ServerState state = new ServerState(debug, address , qualifier);
