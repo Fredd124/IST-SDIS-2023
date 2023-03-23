@@ -72,7 +72,7 @@ public class ServerState {
         if (debug) System.err.println(message);
     }
 
-    public int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
+    public synchronized int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
         } 
@@ -96,7 +96,7 @@ public class ServerState {
         this.ledger = ops;
     }
 
-    public boolean containsUser(String userId) {
+    public synchronized boolean containsUser(String userId) {
         return accountMap.containsKey(userId);
     }
 
@@ -156,21 +156,17 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount);
     }
 
-    public void doOp(Operation op) {
+    public synchronized void doOp(Operation op) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
-            synchronized(this.ledger) {
-                ledger.add(createOp);
-            }
+            ledger.add(createOp);
             debugPrint("Created account: " + createOp.getAccount());
         } 
         else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
             DeleteOp deleteOp = (DeleteOp) op;
             accountMap.remove(deleteOp.getAccount());
-            synchronized(this.ledger) {
-                ledger.add(deleteOp);
-            }
+            ledger.add(deleteOp);
             debugPrint("Deleted account: " + deleteOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
@@ -179,14 +175,12 @@ public class ServerState {
                         accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
             accountMap.put(transferOp.getDestAccount(), 
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-            synchronized(this.ledger) {
-                ledger.add(transferOp);
-            }
+            ledger.add(transferOp);
             debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
         }
     }
 
-    public void doOpList(List<Operation> missingOps) {
+    public synchronized void doOpList(List<Operation> missingOps) {
         for (Operation op : missingOps) {
             this.doOp(op);
         }
