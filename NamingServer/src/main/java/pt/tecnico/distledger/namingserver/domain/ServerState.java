@@ -39,7 +39,6 @@ public class ServerState {
                 throw new RegisterNotPossible();
             }
         }
-        System.out.println(services.size());
         serviceEntry.addServer(address, qualifier);
     }
 
