@@ -9,11 +9,10 @@ import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLe
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.ProvideStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
+import pt.tecnico.distledger.utils.Utils;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 
 import io.grpc.ManagedChannel;
@@ -113,21 +112,19 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         String other = qualifier.equals(MAIN_SERVER_QUALIFIER) ? SECONDARY_SERVER_QUALIFIER : MAIN_SERVER_QUALIFIER;
         state.debugPrint("Asking for state from " + other);
 
-        this.lookupAndAsk(other);
+        this.lookupAndAskForState(qualifier);
     }
 
-    private void lookupAndAsk(String qualifier) {
+    private void lookupAndAskForState(String qualifier) {
         try {
             if (!serverCache.distLedgerHasEntry(qualifier)) {
                 state.debugPrint(String.format("Sending lookup request to service %s", SERVICE_NAME));
-                LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME)
-                    .setQualifier(qualifier).build();
-                LookupResponse response = dnsStub.lookup(request);
-                if (response.getServersCount() == 0) {
+                List<String> result = Utils.lookupOnDns(dnsStub, qualifier);
+                if (result.size() == 0) {
                     state.debugPrint(String.format("No server found for qualifier %s.", qualifier));
                     return;
                 }
-                String address = response.getServers(0);
+                String address = result.get(0);
                 state.debugPrint("Got server address: " + address);
                 serverCache.addEntry(qualifier, address);
                 state.debugPrint(String.format("Added %s qualifier to server cache.", qualifier));
@@ -139,7 +136,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             DistLedgerCommonDefinitions.LedgerState state = response.getState();
             List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
                 .collect(Collectors.toList());
-            this.state.debugPrint(ops.size() + "|---|" + this.state.getLedgerState().size());
             if (ops.size() > this.state.getLedgerState().size()) {
                 List<Operation> missingOps = ops.subList(this.state.getLedgerState().size(), ops.size());
                 this.state.debugPrint("Missing ops: " + missingOps.size());
@@ -150,7 +146,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         catch (StatusRuntimeException e ) {
             serverCache.removeEntry(qualifier);
             state.debugPrint("Propagate failed for server in cache.");
-            lookupAndAsk(qualifier);
         }
     }
 

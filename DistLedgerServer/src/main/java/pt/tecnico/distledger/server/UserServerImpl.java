@@ -5,14 +5,13 @@ import pt.tecnico.distledger.server.domain.exceptions.NotWritableException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
+import pt.tecnico.distledger.utils.Utils;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
@@ -56,15 +55,15 @@ public class UserServerImpl extends UserServiceImplBase {
     private boolean propagateToSecondary(Operation op) {
         try {
             if (! serverCache.distLedgerHasEntry(SECONDARY_SERVER_QUALIFIER)) {
-                state.debugPrint("Doing lookup");
-                LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME)
-                    .setQualifier(SECONDARY_SERVER_QUALIFIER).build();
-                LookupResponse response = dnsStub.lookup(request);
-                if (response.getServersCount() == 0) {
-                    state.debugPrint("No servers found. Propagate request failed.");
+                state.debugPrint(String.format("Sending lookup request to service %s", SERVICE_NAME));
+                List<String> result =  Utils.lookupOnDns(dnsStub, SECONDARY_SERVER_QUALIFIER);
+                if (result.size() == 0) {
+                    state.debugPrint(
+                        String.format("No server found for qualifier %s.", SECONDARY_SERVER_QUALIFIER)
+                    );
                     return false;
                 }
-                String address = response.getServers(0);
+                String address = result.get(0);
                 state.debugPrint("Got server address: " + address);
                 serverCache.addEntry(SECONDARY_SERVER_QUALIFIER, address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));

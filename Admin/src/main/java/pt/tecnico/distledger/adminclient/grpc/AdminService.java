@@ -3,12 +3,15 @@ package pt.tecnico.distledger.adminclient.grpc;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
+import pt.tecnico.distledger.utils.AdminServerCache;
+import pt.tecnico.distledger.utils.Utils;
+
+import static io.grpc.Status.UNAVAILABLE;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import pt.tecnico.distledger.utils.AdminServerCache;
-import static io.grpc.Status.UNAVAILABLE;
+
+import java.util.List;
 
 public class AdminService {
 
@@ -16,7 +19,6 @@ public class AdminService {
     private ManagedChannel namingServerChannel;
     private AdminServerCache serverCache;
     private boolean debug;
-    private final String SERVICE_NAME = "DistLedger";
 
     public AdminService(String target, boolean debug) {
         this.debug = debug;
@@ -26,17 +28,15 @@ public class AdminService {
     }
 
     private void lookup(String qualifier) {
-        NamingServer.LookupRequest request = NamingServer.LookupRequest.newBuilder().
-                                                setName(SERVICE_NAME).setQualifier(qualifier).build();
-        debugPrint(String.format("Sent lookup request to server DistLedger %s .", qualifier));
-        NamingServer.LookupResponse response = namingServerStub.lookup(request);
+        debugPrint(String.format("Sending lookup request to server DistLedger %s .", qualifier));
+        List<String> result = Utils.lookupOnDns(namingServerStub, qualifier);
         debugPrint(String.format("Received lookup response from server with servers list %s .", 
-            response.getServersList().toString()));
-        if (response.getServersCount() == 0) {
+            result.toString()));
+        if (result.size() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
             return;
         }
-        String address = response.getServers(0);
+        String address = result.get(0);
         serverCache.addEntry(qualifier, address);
     }
 

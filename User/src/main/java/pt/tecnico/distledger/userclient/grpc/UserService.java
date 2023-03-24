@@ -1,21 +1,23 @@
 package pt.tecnico.distledger.userclient.grpc;
 
 import pt.tecnico.distledger.utils.UserServerCache;
+import pt.tecnico.distledger.utils.Utils;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceBlockingStub;
-import pt.ulisboa.tecnico.distledger.contract.user.*;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
+
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import static io.grpc.Status.UNAVAILABLE;
 
+import java.util.List;
 
 public class UserService {
 
@@ -23,7 +25,6 @@ public class UserService {
     private UserServerCache serverCache;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
-    private final String SERVICE_NAME = "DistLedger";
 
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
@@ -34,15 +35,14 @@ public class UserService {
     }
 
     public void lookupService(String qualifier) {
-        LookupRequest request = LookupRequest.newBuilder().setName(SERVICE_NAME).setQualifier(qualifier).build();
-        debugPrint(String.format("Sent lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
-        LookupResponse response = dnsStub.lookup(request);
-        debugPrint(String.format("Received lookup response from server with servers list %s .", response.getServersList().toString()));
-        if (response.getServersCount() == 0) {
+        debugPrint(String.format("Sending lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
+        List<String> result = Utils.lookupOnDns(dnsStub, qualifier);
+        if (result.size() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
             return;
         }
-        String address = response.getServers(0);
+        String address = result.get(0);
+        debugPrint(String.format("Received lookup response from server with servers list %s .", result.toString()));
         serverCache.addEntry(qualifier, address);
     }
 
