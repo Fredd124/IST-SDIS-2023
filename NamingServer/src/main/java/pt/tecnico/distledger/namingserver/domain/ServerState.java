@@ -11,6 +11,8 @@ public class ServerState {
     
     private Map<String, ServiceEntry> services = Collections.synchronizedMap(new HashMap<>());
     private boolean isDebug;
+    private final String MAIN_SERVER_QUALIFIER = "A";
+    private final String SECONDARY_SERVER_QUALIFIER = "B";
 
     public ServerState(boolean isDebug) {
         this.isDebug = isDebug;
@@ -29,10 +31,13 @@ public class ServerState {
     }
 
     public void registerService(String serviceName, String qualifier, String address) 
-            throws RegisterNotPossible {
+            throws RegisterNotPossible, InvalidQualifier {
         if (!services.containsKey(serviceName)) {
             addService(serviceName);
         } 
+        if (!qualifier.equals(MAIN_SERVER_QUALIFIER) && !qualifier.equals(SECONDARY_SERVER_QUALIFIER)) {
+            throw new InvalidQualifier();
+        }
         ServiceEntry serviceEntry = getService(serviceName);
         for (ServerEntry server: serviceEntry.getServers()) {
             if (server.getQualifier().equals(qualifier) || server.getAddress().equals(address)) {
