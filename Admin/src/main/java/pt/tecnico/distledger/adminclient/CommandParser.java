@@ -66,7 +66,6 @@ public class CommandParser {
                     this.printUsage();
                     break;
             }
-
         }
     }
 
@@ -113,6 +112,7 @@ public class CommandParser {
     private void gossip(String line){
         //adminService.gossip();
     }
+    
     private void printUsage() {
         System.out.println("Usage:\n" +
                 "- activate <server>\n" +

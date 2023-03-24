@@ -141,7 +141,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
                 this.state.debugPrint("Missing ops: " + missingOps.size());
                 this.state.doOpList(missingOps);
             }
-
         } 
         catch (StatusRuntimeException e ) {
             serverCache.removeEntry(qualifier);

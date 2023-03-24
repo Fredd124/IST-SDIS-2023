@@ -84,7 +84,6 @@ public class CommandParser {
             this.printUsage();
             return;
         }
-
         String server = split[1];
         String username = split[2];
 

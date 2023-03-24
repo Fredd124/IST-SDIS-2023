@@ -44,7 +44,7 @@ public class ServerMain {
                 System.err.println(String.format("Invalid argument : %s .", args[i]));
             }
         }
-
+        
         final String NAMING_SERVER_TARGET = "localhost:5001";
         ManagedChannel dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();
         NamingServerServiceBlockingStub dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
@@ -70,7 +70,6 @@ public class ServerMain {
         final UserServerImpl userImpl = new UserServerImpl(state, serverCache);
         final CrossServerImpl crossServerImpl = new CrossServerImpl(state, serverCache);
         
-
         // Create a new server to listen on port
 		Server server = ServerBuilder.forPort(port).addService(adminImpl).addService(userImpl)
         .addService(crossServerImpl).build();

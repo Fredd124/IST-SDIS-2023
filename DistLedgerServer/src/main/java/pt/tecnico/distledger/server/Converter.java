@@ -29,8 +29,8 @@ public class Converter {
                 return DistLedgerCommonDefinitions.Operation.newBuilder()
                 .setType(OperationType.OP_UNSPECIFIED).build();
         }
-
     }
+
     public static Operation convertFromGrpc(DistLedgerCommonDefinitions.Operation operation) {
         DistLedgerCommonDefinitions.OperationType type = operation.getType();
         switch(type) {
@@ -45,6 +45,5 @@ public class Converter {
             default:
                 return null;
         }
-        
     }
 }

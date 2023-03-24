@@ -89,7 +89,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
         }
         DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState
                 .newBuilder().addAllLedger(ledgerState).build();
-
         state.debugPrint(String.format("Got ledger state ."));
         getLedgerStateResponse response = getLedgerStateResponse.newBuilder()
                 .setLedgerState(ledgerStateGrpc).build();
