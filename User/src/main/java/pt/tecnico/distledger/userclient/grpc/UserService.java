@@ -34,16 +34,17 @@ public class UserService {
         debugPrint("Created user service.");
     }
 
-    public void lookupService(String qualifier) {
+    public boolean lookupService(String qualifier) {
         debugPrint(String.format("Sending lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
         List<String> result = Utils.lookupOnDns(dnsStub, qualifier);
         if (result.size() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
-            return;
+            return false;
         }
         String address = result.get(0);
         debugPrint(String.format("Received lookup response from server with servers list %s .", result.toString()));
         serverCache.addEntry(qualifier, address);
+        return true;
     }
 
     public void namingServerServiceChannelShutdown() {
@@ -54,9 +55,15 @@ public class UserService {
 
     public void createAccount(String qualifier, String username) {
         try {
+            boolean result = true;
             if (!serverCache.userHasEntry(qualifier)) {
-                lookupService(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
             debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
@@ -74,9 +81,15 @@ public class UserService {
 
     public void deleteAccount(String qualifier, String username) {
         try {
+            boolean result = true;
             if (!serverCache.userHasEntry(qualifier)) {
-                lookupService(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
             debugPrint(String.format("Sent delete account request to server %s with username %s as argument.",qualifier, username));
@@ -94,9 +107,15 @@ public class UserService {
 
     public void balance(String qualifier, String username) {
         try {
+            boolean result = true;
             if (!serverCache.userHasEntry(qualifier)) {
-                lookupService(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse response;    
@@ -117,9 +136,15 @@ public class UserService {
 
     public void transferTo(String qualifier, String from, String dest, Integer amount) {        
         try {
+            boolean result = true;
             if (!serverCache.userHasEntry(qualifier)) {
-                lookupService(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {                
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
             debugPrint(String.format("Sent transferTo request to server %s with from %s, dest %s and amount %d as arguments.",qualifier, from, dest, amount));

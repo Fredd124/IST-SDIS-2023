@@ -27,24 +27,31 @@ public class AdminService {
         this.serverCache = new AdminServerCache();
     }
 
-    private void lookup(String qualifier) {
+    private boolean lookupService(String qualifier) {
         debugPrint(String.format("Sending lookup request to server DistLedger %s .", qualifier));
         List<String> result = Utils.lookupOnDns(namingServerStub, qualifier);
         debugPrint(String.format("Received lookup response from server with servers list %s .", 
             result.toString()));
         if (result.size() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
-            return;
+            return false;
         }
         String address = result.get(0);
         serverCache.addEntry(qualifier, address);
+        return true;
     }
 
     public void activate(String qualifier) {
         try {
+            boolean result = true;
             if (!serverCache.adminHasEntry(qualifier)) {
-                lookup(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.ActivateRequest request = AdminDistLedger.ActivateRequest.newBuilder().build();
             debugPrint(String.format("Sending activate request to server %s ...", qualifier));
@@ -63,9 +70,15 @@ public class AdminService {
 
     public void deactivate(String qualifier) {
         try {
+            boolean result = true;
             if (!serverCache.adminHasEntry(qualifier)) {
-                lookup(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.DeactivateRequest request = AdminDistLedger.DeactivateRequest.newBuilder().build();
             debugPrint(String.format("Sending deactivate request to server %s ...", qualifier));
@@ -84,9 +97,15 @@ public class AdminService {
 
     public void gossip(String qualifier) {
         try {
+            boolean result = true;
             if (!serverCache.adminHasEntry(qualifier)) {
-                lookup(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.GossipRequest request = AdminDistLedger.GossipRequest.newBuilder().build();
             debugPrint(String.format("Sending gossip request to server %s ...", qualifier));
@@ -105,9 +124,15 @@ public class AdminService {
 
     public void getLedgerState(String qualifier) {
         try {
+            boolean result = true;
             if (!serverCache.adminHasEntry(qualifier)) {
-                lookup(qualifier);
+                result = lookupService(qualifier);
             } 
+            if (!result) {
+                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
+                System.out.println("No server found for qualifier " + qualifier);
+                return;
+            }
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.getLedgerStateRequest request = AdminDistLedger.getLedgerStateRequest.newBuilder().build();
             debugPrint(String.format("Sending getLedgerState request to server %s ...", qualifier));
