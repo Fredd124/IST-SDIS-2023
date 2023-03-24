@@ -8,7 +8,7 @@ import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLe
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.ProvideStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.ProvideStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase;
-import pt.tecnico.distledger.utils.ServerCache;
+import pt.tecnico.distledger.utils.DistLedgerServerCache;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
 
     private ServerState state;
-    private ServerCache serverCache;
+    private DistLedgerServerCache serverCache;
     private ManagedChannel dnsChannel;
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
     private final String NAMING_SERVER_TARGET = "localhost:5001";
@@ -39,7 +39,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     private final String MAIN_SERVER_QUALIFIER = "A";
     private final String SECONDARY_SERVER_QUALIFIER = "B";
 
-    public CrossServerImpl(ServerState state, ServerCache serverCache) {
+    public CrossServerImpl(ServerState state, DistLedgerServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
         dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();

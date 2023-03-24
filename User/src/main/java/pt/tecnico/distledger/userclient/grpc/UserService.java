@@ -1,6 +1,6 @@
 package pt.tecnico.distledger.userclient.grpc;
 
-import pt.tecnico.distledger.utils.ServerCache;
+import pt.tecnico.distledger.utils.UserServerCache;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
@@ -20,7 +20,7 @@ import static io.grpc.Status.UNAVAILABLE;
 public class UserService {
 
     private ManagedChannel dnsChannel;
-    private ServerCache serverCache;
+    private UserServerCache serverCache;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
     private final String SERVICE_NAME = "DistLedger";
@@ -28,7 +28,7 @@ public class UserService {
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
-        serverCache = new ServerCache();
+        serverCache = new UserServerCache();
         this.debug = debug; 
         debugPrint("Created user service.");
     }

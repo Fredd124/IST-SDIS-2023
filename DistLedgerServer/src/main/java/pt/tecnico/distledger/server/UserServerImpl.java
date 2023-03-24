@@ -4,7 +4,7 @@ import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
 import pt.tecnico.distledger.server.domain.exceptions.NotWritableException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
-import pt.tecnico.distledger.utils.ServerCache;
+import pt.tecnico.distledger.utils.DistLedgerServerCache;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
@@ -39,14 +39,14 @@ import io.grpc.StatusRuntimeException;
 public class UserServerImpl extends UserServiceImplBase {
 
     private ServerState state;
-	private ServerCache serverCache;
+	private DistLedgerServerCache serverCache;
     private ManagedChannel dnsChannel;
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
     private final String NAMING_SERVER_TARGET = "localhost:5001";
     private final String SERVICE_NAME = "DistLedger";
     private final String SECONDARY_SERVER_QUALIFIER = "B";
 
-    public UserServerImpl(ServerState state, ServerCache serverCache) {
+    public UserServerImpl(ServerState state, DistLedgerServerCache serverCache) {
         this.state = state;
         this.serverCache = serverCache;
         dnsChannel = ManagedChannelBuilder.forTarget(NAMING_SERVER_TARGET).usePlaintext().build();

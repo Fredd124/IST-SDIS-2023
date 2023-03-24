@@ -7,14 +7,14 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import pt.tecnico.distledger.utils.ServerCache;
+import pt.tecnico.distledger.utils.AdminServerCache;
 import static io.grpc.Status.UNAVAILABLE;
 
 public class AdminService {
 
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
     private ManagedChannel namingServerChannel;
-    private ServerCache serverCache;
+    private AdminServerCache serverCache;
     private boolean debug;
     private final String SERVICE_NAME = "DistLedger";
 
@@ -22,7 +22,7 @@ public class AdminService {
         this.debug = debug;
         this.namingServerChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
-        this.serverCache = new ServerCache();
+        this.serverCache = new AdminServerCache();
     }
 
     private void lookup(String qualifier) {

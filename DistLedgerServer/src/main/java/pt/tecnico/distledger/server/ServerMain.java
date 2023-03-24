@@ -8,7 +8,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import pt.tecnico.distledger.utils.ServerCache;
+import pt.tecnico.distledger.utils.DistLedgerServerCache;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceBlockingStub;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
@@ -54,7 +54,7 @@ public class ServerMain {
             .setQualifier(qualifier).build();
         dnsStub.register(request);
         ServerState state = new ServerState(debug, address , qualifier);
-        ServerCache serverCache = new ServerCache();
+        DistLedgerServerCache serverCache = new DistLedgerServerCache();
         final BindableService adminImpl = new AdminServerImpl(state);
         final UserServerImpl userImpl = new UserServerImpl(state, serverCache);
         final CrossServerImpl crossServerImpl = new CrossServerImpl(state, serverCache);
