@@ -43,15 +43,11 @@ public class AdminService {
 
     public void activate(String qualifier) {
         try {
-            boolean result = true;
-            if (!serverCache.adminHasEntry(qualifier)) {
-                result = lookupService(qualifier);
-            } 
-            if (!result) {
+            if (!serverCache.adminHasEntry(qualifier) && !lookupService(qualifier)) {
                 debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
                 System.out.println("No server found for qualifier " + qualifier);
                 return;
-            }
+            } 
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.ActivateRequest request = AdminDistLedger.ActivateRequest.newBuilder().build();
             debugPrint(String.format("Sending activate request to server %s ...", qualifier));

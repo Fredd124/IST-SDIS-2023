@@ -55,15 +55,11 @@ public class UserService {
 
     public void createAccount(String qualifier, String username) {
         try {
-            boolean result = true;
-            if (!serverCache.userHasEntry(qualifier)) {
-                result = lookupService(qualifier);
-            } 
-            if (!result) {
+            if (!serverCache.userHasEntry(qualifier) && !lookupService(qualifier)) {
                 debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
                 System.out.println("No server found for qualifier " + qualifier);
                 return;
-            }
+            } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
             debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
