@@ -15,5 +15,4 @@ public class Utils {
         LookupResponse response = dnsStub.lookup(request);
         return response.getServersList();
     }
-
 }

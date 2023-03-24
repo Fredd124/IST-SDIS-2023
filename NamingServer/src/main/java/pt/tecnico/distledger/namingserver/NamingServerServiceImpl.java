@@ -85,7 +85,5 @@ public class NamingServerServiceImpl extends NamingServerServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         }
-        
-    }
-
+   }
 }

@@ -66,15 +66,11 @@ public class AdminService {
 
     public void deactivate(String qualifier) {
         try {
-            boolean result = true;
-            if (!serverCache.adminHasEntry(qualifier)) {
-                result = lookupService(qualifier);
-            } 
-            if (!result) {
+            if (!serverCache.adminHasEntry(qualifier) && !lookupService(qualifier)) {
                 debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
                 System.out.println("No server found for qualifier " + qualifier);
                 return;
-            }
+            } 
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.DeactivateRequest request = AdminDistLedger.DeactivateRequest.newBuilder().build();
             debugPrint(String.format("Sending deactivate request to server %s ...", qualifier));
@@ -93,15 +89,11 @@ public class AdminService {
 
     public void gossip(String qualifier) {
         try {
-            boolean result = true;
-            if (!serverCache.adminHasEntry(qualifier)) {
-                result = lookupService(qualifier);
-            } 
-            if (!result) {
+            if (!serverCache.adminHasEntry(qualifier) && !lookupService(qualifier)) {
                 debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
                 System.out.println("No server found for qualifier " + qualifier);
                 return;
-            }
+            } 
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.GossipRequest request = AdminDistLedger.GossipRequest.newBuilder().build();
             debugPrint(String.format("Sending gossip request to server %s ...", qualifier));
@@ -120,15 +112,11 @@ public class AdminService {
 
     public void getLedgerState(String qualifier) {
         try {
-            boolean result = true;
-            if (!serverCache.adminHasEntry(qualifier)) {
-                result = lookupService(qualifier);
-            } 
-            if (!result) {
+            if (!serverCache.adminHasEntry(qualifier) && !lookupService(qualifier)) {
                 debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
                 System.out.println("No server found for qualifier " + qualifier);
                 return;
-            }
+            } 
             AdminServiceGrpc.AdminServiceBlockingStub stub = serverCache.adminGetEntry(qualifier).getStub();            
             AdminDistLedger.getLedgerStateRequest request = AdminDistLedger.getLedgerStateRequest.newBuilder().build();
             debugPrint(String.format("Sending getLedgerState request to server %s ...", qualifier));
