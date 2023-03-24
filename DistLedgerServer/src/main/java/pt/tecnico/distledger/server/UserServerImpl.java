@@ -269,7 +269,7 @@ public class UserServerImpl extends UserServiceImplBase {
     }
 
     public void shutdownChannels() {
+        serverCache.shutdown();
         dnsChannel.shutdown();
-        serverCache.shutdownServers();
     }
 }

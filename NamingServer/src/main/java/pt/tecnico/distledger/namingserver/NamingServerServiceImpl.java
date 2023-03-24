@@ -53,7 +53,7 @@ public class NamingServerServiceImpl extends NamingServerServiceImplBase {
         String qualifier = request.getQualifier();
         state.debugPrint(
             String.format(
-                "Received lookup request for service with name %s and qualifier $s"
+                "Received lookup request for service with name %s and qualifier %s"
                 , serviceName, qualifier
             )
         );

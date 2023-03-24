@@ -19,6 +19,6 @@ public class UserServerCommunicationEntry {
     }
 
     public void shutdown() {
-        channel.shutdownNow();
+        channel.shutdown();
     }
 }

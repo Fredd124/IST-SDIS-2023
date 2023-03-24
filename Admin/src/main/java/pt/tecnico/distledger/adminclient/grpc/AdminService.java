@@ -137,7 +137,7 @@ public class AdminService {
 
     public void shutdown() {
         debugPrint("Shutting down namingServerChannel...");
-        namingServerChannel.shutdownNow();
+        namingServerChannel.shutdown();
         serverCache.shutdownServers();
         debugPrint("namingServerChannel shut down");
     }

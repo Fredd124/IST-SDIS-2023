@@ -12,6 +12,7 @@ public class AdminServerCache {
     }
 
     public void removeEntry(String qualifier) {
+        adminEntries.get(qualifier).shutdown();
         adminEntries.remove(qualifier);
     }
 

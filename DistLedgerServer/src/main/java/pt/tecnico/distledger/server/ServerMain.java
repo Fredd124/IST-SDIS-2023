@@ -102,6 +102,7 @@ public class ServerMain {
 
     private static void cleanServer(UserServerImpl userImpl, CrossServerImpl crossServerImpl,
         NamingServerServiceBlockingStub dnsStub, ManagedChannel dnsChannel, Server server, String address) {
+            if (server.isShutdown()) return;
             DeleteRequest deleteRequest = DeleteRequest.newBuilder().
                 setAddress(address).setName(SERVICE_NAME).build();
             dnsStub.delete(deleteRequest);

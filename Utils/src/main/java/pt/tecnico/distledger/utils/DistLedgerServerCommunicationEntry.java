@@ -19,7 +19,7 @@ public class DistLedgerServerCommunicationEntry {
     }
 
     public void shutdown() {
-        channel.shutdownNow();
+        channel.shutdown();
     }
 }
 

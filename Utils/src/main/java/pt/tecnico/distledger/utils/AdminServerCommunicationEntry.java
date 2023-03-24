@@ -15,7 +15,7 @@ public class AdminServerCommunicationEntry {
     }
 
     public void shutdown() {
-        channel.shutdownNow();
+        channel.shutdown();
     }
 
     public AdminServiceGrpc.AdminServiceBlockingStub getStub() {

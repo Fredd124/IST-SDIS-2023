@@ -12,6 +12,7 @@ public class DistLedgerServerCache {
     }
 
     public void removeEntry(String qualifier) {
+        distLedgerEntries.get(qualifier).shutdown();
         distLedgerEntries.remove(qualifier);
     }
 
@@ -23,7 +24,7 @@ public class DistLedgerServerCache {
         return distLedgerEntries.get(qualifier);
     }
 
-    public void shutdownServers() {
+    public void shutdown() {
         for (String entry: distLedgerEntries.keySet()) {
             DistLedgerServerCommunicationEntry distLedgerServerCommunicationEntry = distLedgerEntries.get(entry);
             distLedgerServerCommunicationEntry.shutdown();

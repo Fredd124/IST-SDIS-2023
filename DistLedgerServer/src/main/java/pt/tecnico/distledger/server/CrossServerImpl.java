@@ -112,7 +112,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         String other = qualifier.equals(MAIN_SERVER_QUALIFIER) ? SECONDARY_SERVER_QUALIFIER : MAIN_SERVER_QUALIFIER;
         state.debugPrint("Asking for state from " + other);
 
-        this.lookupAndAskForState(qualifier);
+        this.lookupAndAskForState(other);
     }
 
     private void lookupAndAskForState(String qualifier) {
@@ -149,6 +149,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
     }
 
     public void shutdownChannel() {
+        serverCache.shutdown();
         dnsChannel.shutdown();
     }
 }

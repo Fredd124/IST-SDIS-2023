@@ -49,7 +49,7 @@ public class UserService {
 
     public void namingServerServiceChannelShutdown() {
         debugPrint("Shut down client channel.");
-        dnsChannel.shutdownNow();
+        dnsChannel.shutdown();
         serverCache.shutdownServers();
     }
 

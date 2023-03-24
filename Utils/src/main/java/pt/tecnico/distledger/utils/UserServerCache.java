@@ -12,6 +12,7 @@ public class UserServerCache {
     }
 
     public void removeEntry(String qualifier) {
+        userEntries.get(qualifier).shutdown();
         userEntries.remove(qualifier);
     }
 
