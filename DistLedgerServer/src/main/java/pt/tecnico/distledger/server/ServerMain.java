@@ -8,6 +8,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceBlockingStub;
@@ -52,7 +53,17 @@ public class ServerMain {
             .setAddress(address)
             .setName(SERVICE_NAME)
             .setQualifier(qualifier).build();
-        dnsStub.register(request);
+        try {
+            dnsStub.register(request);
+        }
+        catch (StatusRuntimeException e) {
+            dnsChannel.shutdown();
+            if (debug == true) {
+                System.err.println(String.format("Caugth exception : %s .", e.getMessage()));
+                System.err.println("Exitting server...");
+            }
+            System.exit(1);
+        }
         ServerState state = new ServerState(debug, address , qualifier);
         DistLedgerServerCache serverCache = new DistLedgerServerCache();
         final BindableService adminImpl = new AdminServerImpl(state);
