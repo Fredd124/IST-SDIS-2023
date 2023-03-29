@@ -120,10 +120,6 @@ public class UserService {
         }   
     }
 
-    public int getIndexFromQualifier(Character qualifier) {
-        return qualifier - 'A';
-    }
-
     public void debugPrint(String message) {
         if (debug) System.err.println(message);
     }
