@@ -1,7 +1,6 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
-import pt.tecnico.distledger.server.domain.exceptions.NotWritableException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
@@ -23,7 +22,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceIm
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
-import static io.grpc.Status.ABORTED;
 
 import java.util.stream.Collectors;
 import java.util.List;
@@ -136,7 +134,6 @@ public class UserServerImpl extends UserServiceImplBase {
                 "Received create account request from userId : %s .", userId));
         Operation done = null;
         try {
-            state.canWrite();
             done = state.createAccount(userId);
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
@@ -152,12 +149,6 @@ public class UserServerImpl extends UserServiceImplBase {
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        }
-        catch (NotWritableException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(ABORTED.withDescription(e.getMessage())
-                    .asRuntimeException());
         }
         catch (NotActiveException e) {
             state.debugPrint(
@@ -184,28 +175,17 @@ public class UserServerImpl extends UserServiceImplBase {
                 fromUserId, toUserId, value));
         Operation done = null;
         try {
-            state.canWrite();
             done = state.transfer(fromUserId, toUserId, value);
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
-            if (!propagateToSecondary(done)) {
-                responseObserver.onError(UNAVAILABLE.withDescription("The secondary server is not available.")
-                    .asRuntimeException());
-                return;
-            }
+           
             state.debugPrint("Performing operation.");
             state.doOp(done, request.getPrevTSList());
             TransferToResponse response = TransferToResponse.newBuilder()
                         .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        }
-        catch (NotWritableException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(ABORTED.withDescription(e.getMessage())
-                    .asRuntimeException());
         }
         catch (NotActiveException e) {
             state.debugPrint(

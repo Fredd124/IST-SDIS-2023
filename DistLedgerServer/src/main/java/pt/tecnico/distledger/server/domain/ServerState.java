@@ -21,7 +21,6 @@ public class ServerState {
     private Map<String, Integer> accountMap;
     private final String BROKER = "broker";
     private final Integer BROKER_INIT_VALUE = 1000;
-    private final Character MAIN_SERVER_QUALIFIER = 'A';
 
     public ServerState(boolean debug, String address, Character qualifier) {
         this.ledger = Collections.synchronizedList(new ArrayList<>());
@@ -36,12 +35,6 @@ public class ServerState {
 
     public synchronized boolean isActive() {
         return this.active;
-    }
-
-    public void canWrite() throws NotWritableException {
-        if (!this.qualifier.equals(MAIN_SERVER_QUALIFIER)) {
-            throw new NotWritableException();
-        } 
     }
 
     private void setActive(boolean active) {
