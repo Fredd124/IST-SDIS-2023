@@ -107,23 +107,6 @@ public class ServerState {
         return new CreateOp(userId);
     }
 
-    public Operation deleteAccount(String userId) throws NotActiveException, BrokerCantBeDeletedException, 
-            BalanceNotZeroException, UserDoesNotExistException {
-        if (!this.active) {
-            throw new NotActiveException();
-        } 
-        else if (userId.equals(BROKER)) {
-            throw new BrokerCantBeDeletedException();
-        }
-        else if (!this.containsUser(userId)) {
-            throw new UserDoesNotExistException();
-        }
-        else if (this.getBalance(userId) != 0) {
-            throw new BalanceNotZeroException();
-        }
-        return new DeleteOp(userId);
-    }
-
     public Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
             SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
                 SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
@@ -155,12 +138,6 @@ public class ServerState {
             accountMap.put(createOp.getAccount(), 0);
             ledger.add(createOp);
             debugPrint("Created account: " + createOp.getAccount());
-        } 
-        else if (op.getType().equals("OP_DELETE_ACCOUNT")) {
-            DeleteOp deleteOp = (DeleteOp) op;
-            accountMap.remove(deleteOp.getAccount());
-            ledger.add(deleteOp);
-            debugPrint("Deleted account: " + deleteOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
             TransferOp transferOp = (TransferOp) op;
