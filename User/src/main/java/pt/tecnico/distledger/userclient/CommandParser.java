@@ -7,7 +7,6 @@ public class CommandParser {
 
     private static final String SPACE = " ";
     private static final String CREATE_ACCOUNT = "createAccount";
-    private static final String DELETE_ACCOUNT = "deleteAccount";
     private static final String TRANSFER_TO = "transferTo";
     private static final String BALANCE = "balance";
     private static final String HELP = "help";
@@ -35,12 +34,6 @@ public class CommandParser {
                     userService.debugPrint(
                             "Received from input createAccount command.");
                     this.createAccount(line);
-                    break;
-
-                case DELETE_ACCOUNT:
-                    userService.debugPrint(
-                            "Received from input deleteAccount command.");
-                    this.deleteAccount(line);
                     break;
 
                 case TRANSFER_TO:
@@ -92,23 +85,6 @@ public class CommandParser {
                         + "method for server %s and username %s.",
                 server, username));
         userService.createAccount(server, username);
-    }
-
-    private void deleteAccount(String line) {
-        String[] split = line.split(SPACE);
-
-        if (split.length != 3) {
-            this.printUsage();
-            return;
-        }
-        String server = split[1];
-        String username = split[2];
-
-        userService.debugPrint(String.format(
-                "Called userService"
-                        + "deleteAccount method for server %s and username %s.",
-                server, username));
-        userService.deleteAccount(server, username);
     }
 
     private void balance(String line) {

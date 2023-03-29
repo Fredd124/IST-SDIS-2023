@@ -8,7 +8,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 
 
@@ -68,28 +67,6 @@ public class UserService {
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caugth exception : %s .", e.getMessage()));
-            System.out.println(e.getStatus().getDescription());
-            if (e.getStatus().equals(UNAVAILABLE)) {
-                serverCache.removeEntry(qualifier);
-            }
-        }   
-    }
-
-    public void deleteAccount(String qualifier, String username) {
-        try {
-            if (!serverCache.userHasEntry(qualifier) && !lookupService(qualifier)) {
-                debugPrint(String.format("No server found on lookup for qualifier %s .", qualifier));
-                System.out.println("No server found for qualifier " + qualifier);
-                return;
-            } 
-            UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
-            DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
-            debugPrint(String.format("Sent delete account request to server %s with username %s as argument.",qualifier, username));
-            stub.deleteAccount(request);
-            System.out.println("OK");
-        } catch (StatusRuntimeException e) {
-            debugPrint(
-                    String.format("Caught exception : %s .", e.getMessage()));
             System.out.println(e.getStatus().getDescription());
             if (e.getStatus().equals(UNAVAILABLE)) {
                 serverCache.removeEntry(qualifier);

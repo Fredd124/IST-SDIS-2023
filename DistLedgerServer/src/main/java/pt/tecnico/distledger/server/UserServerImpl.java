@@ -16,8 +16,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountResponse;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceImplBase;
@@ -171,52 +169,6 @@ public class UserServerImpl extends UserServiceImplBase {
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(e.getMessage()).asRuntimeException());
-        }
-    }
-
-    @Override
-    public void deleteAccount(DeleteAccountRequest request,
-            StreamObserver<DeleteAccountResponse> responseObserver) {
-        String userId = request.getUserId();
-        state.debugPrint(String.format(
-                "Received delete account request from userId : %s .", userId));
-        Operation done = null;
-        try {
-            state.canWrite();
-            done = state.deleteAccount(userId);
-            state.debugPrint(
-                    String.format("Created operation to delete account for user %s .", userId));
-            if (!propagateToSecondary(done)) {
-                responseObserver.onError(UNAVAILABLE.withDescription("The secondary server is not available.")
-                    .asRuntimeException());
-                return;
-            }
-            state.debugPrint("Performing operation.");
-            state.doOp(done);
-            DeleteAccountResponse response = DeleteAccountResponse.newBuilder()
-                        .build();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        }
-        catch (NotWritableException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(ABORTED.withDescription(e.getMessage())
-                    .asRuntimeException());
-        }
-        catch (NotActiveException e) {
-            state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
-            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
-                    .asRuntimeException());
-        }
-        catch (ServerStateException e) {
-            state.debugPrint(String.format("Threw exception : %s .",
-                    e.getMessage()));
-            responseObserver.onError(INVALID_ARGUMENT
-                    .withDescription(
-                            e.getMessage())
-                    .asRuntimeException());
         }
     }
 
