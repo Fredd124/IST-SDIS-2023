@@ -138,9 +138,11 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
             state.debugPrint("Performing operation.");
-            state.doOp(done, request.getPrevTSList());
+            List<Integer> copyClientVectorClock = new ArrayList<Integer>();
+            request.getPrevTSList().forEach(value -> copyClientVectorClock.add(value));
+            state.doOp(done, copyClientVectorClock);
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
-                    .addAllTS(request.getPrevTSList())
+                    .addAllTS(copyClientVectorClock)
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -175,9 +177,11 @@ public class UserServerImpl extends UserServiceImplBase {
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
             state.debugPrint("Performing operation.");
-            state.doOp(done, request.getPrevTSList());
+            List<Integer> copyClientVectorClock = new ArrayList<Integer>();
+            request.getPrevTSList().forEach(clock -> copyClientVectorClock.add(clock));
+            state.doOp(done, copyClientVectorClock);
             TransferToResponse response = TransferToResponse.newBuilder()
-                        .build();
+                    .addAllTS(copyClientVectorClock).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
