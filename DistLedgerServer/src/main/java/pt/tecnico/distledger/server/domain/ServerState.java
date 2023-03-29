@@ -25,6 +25,9 @@ public class ServerState {
     public ServerState(boolean debug, String address, Character qualifier) {
         this.ledger = Collections.synchronizedList(new ArrayList<>());
         this.replicaVectorClock = Collections.synchronizedList(new ArrayList<>());
+        for (int i = 0; i < 3; i++) {
+            this.replicaVectorClock.add(0);
+        }
         this.active = true;
         this.debug = debug;
         this.address = address;
@@ -137,8 +140,11 @@ public class ServerState {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
             ledger.add(createOp);
-            int i = Utils.getIndexFromQualifier(qualifier);
-            clientVectorClock.set(i, replicaVectorClock.get(i));
+            if (clientVectorClock != null) {
+                int i = Utils.getIndexFromQualifier(qualifier);
+                System.out.println(replicaVectorClock.get(i));
+                clientVectorClock.set(i, replicaVectorClock.get(i));
+            }
             debugPrint("Created account: " + createOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
@@ -148,12 +154,14 @@ public class ServerState {
             accountMap.put(transferOp.getDestAccount(), 
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
             ledger.add(transferOp);
+            int i = Utils.getIndexFromQualifier(qualifier);
+            replicaVectorClock.set(i, replicaVectorClock.get(i));
             if (clientVectorClock != null) {
-                int i = Utils.getIndexFromQualifier(qualifier);
                 clientVectorClock.set(i, replicaVectorClock.get(i));
             }
             debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
         }
+        debugPrint(String.format("New clock for server %s : %s", qualifier, replicaVectorClock.toString()));
     }
 
     public void doOpList(List<Operation> missingOps, List<Integer> clientVectorClock) {
