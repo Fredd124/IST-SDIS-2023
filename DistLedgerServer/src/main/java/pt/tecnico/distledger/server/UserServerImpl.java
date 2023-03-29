@@ -106,7 +106,7 @@ public class UserServerImpl extends UserServiceImplBase {
         state.debugPrint(String.format(
                 "Received get balance request from userId : %s .", userId));
         try {
-            int balance = state.getBalance(userId);
+            int balance = state.balance(userId, request.getPrevTSList());
             state.debugPrint(String.format(
                     "Returning balance for user %s : %d .", userId, balance));
             BalanceResponse response = BalanceResponse.newBuilder()
@@ -146,9 +146,10 @@ public class UserServerImpl extends UserServiceImplBase {
                 return;
             }
             state.debugPrint("Performing operation.");
-            state.doOp(done);
+            state.doOp(done, request.getPrevTSList());
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
-                        .build();
+                    .addAllTS(request.getPrevTSList())
+                    .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
@@ -194,7 +195,7 @@ public class UserServerImpl extends UserServiceImplBase {
                 return;
             }
             state.debugPrint("Performing operation.");
-            state.doOp(done);
+            state.doOp(done, request.getPrevTSList());
             TransferToResponse response = TransferToResponse.newBuilder()
                         .build();
             responseObserver.onNext(response);

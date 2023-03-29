@@ -34,7 +34,11 @@ public class ServerMain {
 		}
 
 		final int port = Integer.parseInt(args[0]);
-        final String qualifier = args[1];
+        if (args[1].length() != 1) {
+            System.err.println("Invalid qualifier. Qualifier needs to have length=1 .");
+            System.exit(1);
+        }
+        final Character qualifier = args[1].charAt(0);
         boolean debug = false;
         for (int i = 2; i < args.length; i++) {
             if (args[i].equals("-debug")) {
@@ -52,7 +56,7 @@ public class ServerMain {
         RegisterRequest request = RegisterRequest.newBuilder()
             .setAddress(address)
             .setName(SERVICE_NAME)
-            .setQualifier(qualifier).build();
+            .setQualifier(qualifier.toString()).build();
         try {
             dnsStub.register(request);
         }
@@ -108,7 +112,6 @@ public class ServerMain {
             dnsStub.delete(deleteRequest);
             dnsChannel.shutdown();
             userImpl.shutdownChannels();
-            crossServerImpl.shutdownChannel();
             server.shutdown();
     }
 

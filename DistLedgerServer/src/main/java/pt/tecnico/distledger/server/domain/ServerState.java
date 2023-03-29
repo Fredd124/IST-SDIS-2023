@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server.domain;
 
 import pt.tecnico.distledger.server.domain.operation.*;
+import pt.tecnico.distledger.utils.Utils;
 import pt.tecnico.distledger.server.domain.exceptions.*;
 
 import java.util.ArrayList;
@@ -12,17 +13,19 @@ import java.util.Collections;
 public class ServerState {
 
     private List<Operation> ledger;
+    private List<Integer> replicaVectorClock;
     private String address;
-    private String qualifier;
+    private Character qualifier;
     private boolean active;
     private boolean debug;
     private Map<String, Integer> accountMap;
     private final String BROKER = "broker";
     private final Integer BROKER_INIT_VALUE = 1000;
-    private final String MAIN_SERVER_QUALIFIER = "A";
+    private final Character MAIN_SERVER_QUALIFIER = 'A';
 
-    public ServerState(boolean debug, String address, String qualifier) {
+    public ServerState(boolean debug, String address, Character qualifier) {
         this.ledger = Collections.synchronizedList(new ArrayList<>());
+        this.replicaVectorClock = Collections.synchronizedList(new ArrayList<>());
         this.active = true;
         this.debug = debug;
         this.address = address;
@@ -49,7 +52,7 @@ public class ServerState {
         return this.address;
     }
 
-    public String getQualifier() {
+    public Character getQualifier() {
         return this.qualifier;
     }
 
@@ -71,13 +74,17 @@ public class ServerState {
         if (debug) System.err.println(message);
     }
 
-    public int getBalance(String userId) throws NotActiveException, UserDoesNotExistException {
+    public int balance(String userId, List<Integer> clientVectorClock) throws NotActiveException, UserDoesNotExistException{
         if (!this.active) {
             throw new NotActiveException();
         } 
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
+        return getBalance(userId);
+    }
+
+    public int getBalance(String userId) {
         return accountMap.get(userId);
     }
 
@@ -132,11 +139,13 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount);
     }
 
-    public void doOp(Operation op) {
+    public void doOp(Operation op, List<Integer> clientVectorClock) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
             ledger.add(createOp);
+            int i = Utils.getIndexFromQualifier(qualifier);
+            clientVectorClock.set(i, replicaVectorClock.get(i));
             debugPrint("Created account: " + createOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
@@ -146,13 +155,17 @@ public class ServerState {
             accountMap.put(transferOp.getDestAccount(), 
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
             ledger.add(transferOp);
+            if (clientVectorClock != null) {
+                int i = Utils.getIndexFromQualifier(qualifier);
+                clientVectorClock.set(i, replicaVectorClock.get(i));
+            }
             debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
         }
     }
 
-    public void doOpList(List<Operation> missingOps) {
+    public void doOpList(List<Operation> missingOps, List<Integer> clientVectorClock) {
         for (Operation op : missingOps) {
-            this.doOp(op);
+            this.doOp(op, clientVectorClock);
         }
     }
 }
