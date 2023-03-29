@@ -131,7 +131,7 @@ public class ServerState {
         }
         else if (amount <= 0) {
             throw new InvalidBalanceAmountException();
-        }
+        }   
         return new TransferOp(fromAccount, toAccount, amount);
     }
 
@@ -140,9 +140,9 @@ public class ServerState {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
             ledger.add(createOp);
+            int i = Utils.getIndexFromQualifier(qualifier);
+            replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
             if (clientVectorClock != null) {
-                int i = Utils.getIndexFromQualifier(qualifier);
-                System.out.println(replicaVectorClock.get(i));
                 clientVectorClock.set(i, replicaVectorClock.get(i));
             }
             debugPrint("Created account: " + createOp.getAccount());
@@ -155,7 +155,7 @@ public class ServerState {
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
             ledger.add(transferOp);
             int i = Utils.getIndexFromQualifier(qualifier);
-            replicaVectorClock.set(i, replicaVectorClock.get(i));
+            replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
             if (clientVectorClock != null) {
                 clientVectorClock.set(i, replicaVectorClock.get(i));
             }
