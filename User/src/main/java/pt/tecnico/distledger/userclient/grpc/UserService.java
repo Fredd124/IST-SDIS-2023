@@ -8,7 +8,9 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -16,6 +18,7 @@ import io.grpc.StatusRuntimeException;
 import static io.grpc.Status.UNAVAILABLE;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class UserService {
 
@@ -23,12 +26,14 @@ public class UserService {
     private UserServerCache serverCache;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
+    private List<Integer> clockMap = new ArrayList<>();
 
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         serverCache = new UserServerCache();
         this.debug = debug; 
+        clockMap.add(0);
         debugPrint("Created user service.");
     }
 
@@ -59,9 +64,11 @@ public class UserService {
                 return;
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
-            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build(); 
+            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).addAllPrevTS(clockMap).build(); 
+            CreateAccountResponse response;
             debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
-            stub.createAccount(request);
+            response = stub.createAccount(request);
+            clockMap = response.getTSList();
             System.out.println("OK");
         } catch (StatusRuntimeException e) {
             debugPrint(
@@ -81,13 +88,14 @@ public class UserService {
                 return;
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
-            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
+            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).addAllPrevTS(clockMap).build();
             BalanceResponse response;    
             debugPrint(String.format("Sent balance request to server  %s with username %s as argument.",qualifier, username));
             response = stub.balance(request);
             debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
             System.out.println("OK");
             System.out.print(response);
+            clockMap = response.getValueTSList();
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
@@ -107,9 +115,11 @@ public class UserService {
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+            TransferToResponse response;
             debugPrint(String.format("Sent transferTo request to server %s with from %s, dest %s and amount %d as arguments.",qualifier, from, dest, amount));
-            stub.transferTo(request);
-            System.out.println("OK");
+            response = stub.transferTo(request);
+            System.out.println("OK");   
+            clockMap = response.getTSList();
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
