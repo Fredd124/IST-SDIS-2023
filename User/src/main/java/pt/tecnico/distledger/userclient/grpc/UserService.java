@@ -7,7 +7,7 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGr
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest; 
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 
 import io.grpc.ManagedChannel;
@@ -118,6 +118,10 @@ public class UserService {
                 serverCache.removeEntry(qualifier);
             }
         }   
+    }
+
+    public int getIndexFromQualifier(Character qualifier) {
+        return qualifier - 'A';
     }
 
     public void debugPrint(String message) {
