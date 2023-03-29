@@ -108,9 +108,18 @@ public class CommandParser {
         adminService.getLedgerState(server);
     }
 
-    @SuppressWarnings("unused")
+    //@SuppressWarnings("unused")
     private void gossip(String line){
-        //adminService.gossip();
+        String[] split = line.split(SPACE);
+
+        if (split.length != 2){
+            this.printUsage();
+            return;
+        }
+        String server = split[1];
+
+        adminService.debugPrint("Calling adminService getLedgerState method");
+        adminService.gossip(server);
     }
     
     private void printUsage() {
