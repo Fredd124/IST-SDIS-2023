@@ -33,7 +33,9 @@ public class UserService {
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         serverCache = new UserServerCache();
         this.debug = debug; 
-        vectorClock.add(0);
+        for (int i = 0; i < 3; i++) {
+            vectorClock.add(0);
+        }
         debugPrint("Created user service.");
     }
 
