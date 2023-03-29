@@ -26,14 +26,14 @@ public class UserService {
     private UserServerCache serverCache;
     private NamingServerServiceBlockingStub dnsStub;
     private boolean debug;
-    private List<Integer> clockMap = new ArrayList<>();
+    private List<Integer> vectorClock = new ArrayList<>();
 
     public UserService(String target, boolean debug) {
         this.dnsChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.dnsStub = NamingServerServiceGrpc.newBlockingStub(dnsChannel);
         serverCache = new UserServerCache();
         this.debug = debug; 
-        clockMap.add(0);
+        vectorClock.add(0);
         debugPrint("Created user service.");
     }
 
@@ -64,12 +64,13 @@ public class UserService {
                 return;
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
-            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).addAllPrevTS(clockMap).build(); 
+            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).addAllPrevTS(vectorClock).build(); 
             CreateAccountResponse response;
             debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
             response = stub.createAccount(request);
-            clockMap = response.getTSList();
             System.out.println("OK");
+            vectorClock = response.getTSList();
+            debugPrint(String.format("Received vector clock %s from server.", vectorClock.toString()));
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caugth exception : %s .", e.getMessage()));
@@ -88,14 +89,15 @@ public class UserService {
                 return;
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
-            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).addAllPrevTS(clockMap).build();
+            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).addAllPrevTS(vectorClock).build();
             BalanceResponse response;    
             debugPrint(String.format("Sent balance request to server  %s with username %s as argument.",qualifier, username));
             response = stub.balance(request);
             debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
             System.out.println("OK");
             System.out.print(response);
-            clockMap = response.getValueTSList();
+            vectorClock = response.getValueTSList();
+            debugPrint(String.format("Received vector clock %s from server.", vectorClock.toString()));
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
@@ -114,12 +116,13 @@ public class UserService {
                 return;
             } 
             UserServiceGrpc.UserServiceBlockingStub stub = serverCache.userGetEntry(qualifier).getStub();            
-            TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+            TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).addAllPrevTS(vectorClock).build();
             TransferToResponse response;
             debugPrint(String.format("Sent transferTo request to server %s with from %s, dest %s and amount %d as arguments.",qualifier, from, dest, amount));
             response = stub.transferTo(request);
             System.out.println("OK");   
-            clockMap = response.getTSList();
+            vectorClock = response.getTSList();
+            debugPrint(String.format("Received vector clock %s from server.", vectorClock.toString()));
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
