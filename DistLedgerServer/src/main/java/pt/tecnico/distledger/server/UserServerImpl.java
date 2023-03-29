@@ -137,11 +137,6 @@ public class UserServerImpl extends UserServiceImplBase {
             done = state.createAccount(userId);
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
-			if (!propagateToSecondary(done)) {
-                responseObserver.onError(UNAVAILABLE.withDescription("The secondary server is not available.")
-                    .asRuntimeException());
-                return;
-            }
             state.debugPrint("Performing operation.");
             state.doOp(done, request.getPrevTSList());
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
@@ -179,7 +174,6 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
-           
             state.debugPrint("Performing operation.");
             state.doOp(done, request.getPrevTSList());
             TransferToResponse response = TransferToResponse.newBuilder()
