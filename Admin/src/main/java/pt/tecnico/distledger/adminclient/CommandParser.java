@@ -108,7 +108,6 @@ public class CommandParser {
         adminService.getLedgerState(server);
     }
 
-    //@SuppressWarnings("unused")
     private void gossip(String line){
         String[] split = line.split(SPACE);
 

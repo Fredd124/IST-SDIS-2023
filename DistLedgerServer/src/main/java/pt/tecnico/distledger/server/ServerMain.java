@@ -70,8 +70,8 @@ public class ServerMain {
         }
         ServerState state = new ServerState(debug, address , qualifier);
         DistLedgerServerCache serverCache = new DistLedgerServerCache();
-        final BindableService adminImpl = new AdminServerImpl(state);
-        final UserServerImpl userImpl = new UserServerImpl(state, serverCache);
+        final AdminServerImpl adminImpl = new AdminServerImpl(state, serverCache);
+        final BindableService userImpl = new UserServerImpl(state);
         final CrossServerImpl crossServerImpl = new CrossServerImpl(state, serverCache);
         
         // Create a new server to listen on port
@@ -93,7 +93,7 @@ public class ServerMain {
         boolean exit = false;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                cleanServer(userImpl, crossServerImpl, dnsStub, dnsChannel, server, address);
+                cleanServer(adminImpl, crossServerImpl, dnsStub, dnsChannel, server, address);
             }
         });
         while(! exit) {
@@ -101,17 +101,17 @@ public class ServerMain {
             if (line.equals("")) exit = true;
         }
         scanner.close();
-        cleanServer(userImpl, crossServerImpl, dnsStub, dnsChannel, server, address);
+        cleanServer(adminImpl, crossServerImpl, dnsStub, dnsChannel, server, address);
     }
 
-    private static void cleanServer(UserServerImpl userImpl, CrossServerImpl crossServerImpl,
+    private static void cleanServer(AdminServerImpl adminImpl, CrossServerImpl crossServerImpl,
         NamingServerServiceBlockingStub dnsStub, ManagedChannel dnsChannel, Server server, String address) {
             if (server.isShutdown()) return;
             DeleteRequest deleteRequest = DeleteRequest.newBuilder().
                 setAddress(address).setName(SERVICE_NAME).build();
             dnsStub.delete(deleteRequest);
             dnsChannel.shutdown();
-            userImpl.shutdownChannels();
+            adminImpl.shutdownChannels();
             server.shutdown();
     }
 

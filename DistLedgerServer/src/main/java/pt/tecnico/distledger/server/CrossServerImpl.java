@@ -53,14 +53,16 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
             return;
         }
-        if (state.getLedgerState().size() != request.getLedgerSize()) {
+        /* if (state.getLedgerState().size() != request.getLedgerSize()) {
             state.debugPrint("Ledger size is different.");
             responseObserver.onError(CANCELLED.withDescription("Ledger size is different.").asRuntimeException());
             return;
-        }
+        } */
         Operation op = Converter.convertFromGrpc(request.getOperation());
         this.state.debugPrint("Received operation: " + op.toString());
-        this.state.doOp(op, null);
+        this.state.addOp(op, null);
+        this.state.updateReplicaClocks(request.getReplicaTSList());
+        this.state.updateStableOps();
         PropagateOperationResponse response = PropagateOperationResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();

@@ -52,6 +52,10 @@ public class ServerState {
         return this.qualifier;
     }
 
+    public List<Integer> getReplicaVectorClock() {
+        return this.replicaVectorClock;
+    }
+
     public synchronized void activate() throws AlreadyActiveException {
         if (this.active) {
             throw new AlreadyActiveException();
@@ -135,16 +139,21 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount);
     }
 
+    public void addOp(Operation op, List<Integer> clientVectorClock) {
+        ledger.add(op);
+        int i = Utils.getIndexFromQualifier(qualifier);
+        replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
+        if (clientVectorClock != null) {
+            clientVectorClock.set(i, replicaVectorClock.get(i));
+        }
+        debugPrint(String.format("New clock for server %s : %s", this.qualifier, this.replicaVectorClock.toString()));
+        updateStableOps();
+    }
+
     public void doOp(Operation op, List<Integer> clientVectorClock) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
-            ledger.add(createOp);
-            int i = Utils.getIndexFromQualifier(qualifier);
-            replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
-            if (clientVectorClock != null) {
-                clientVectorClock.set(i, replicaVectorClock.get(i));
-            }
             debugPrint("Created account: " + createOp.getAccount());
         } 
         else if (op.getType().equals("OP_TRANSFER_TO")) {
@@ -153,20 +162,36 @@ public class ServerState {
                         accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
             accountMap.put(transferOp.getDestAccount(), 
                         accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-            ledger.add(transferOp);
-            int i = Utils.getIndexFromQualifier(qualifier);
-            replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
-            if (clientVectorClock != null) {
-                clientVectorClock.set(i, replicaVectorClock.get(i));
-            }
             debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
         }
-        debugPrint(String.format("New clock for server %s : %s", qualifier, replicaVectorClock.toString()));
     }
+
 
     public void doOpList(List<Operation> missingOps, List<Integer> clientVectorClock) {
         for (Operation op : missingOps) {
             this.doOp(op, clientVectorClock);
         }
+    }
+
+    public void updateStableOps() {
+        ledger.stream().forEach(operation -> {
+            if (! operation.isStable())
+                if (operation.getType().equals("OP_CREATE_ACCOUNT")) {
+                    operation.setStable(true);
+                    doOp(operation, null);
+                }
+                else if(operation.getType().equals("OP_TRANSFER_TO")) {
+                    // TODO : think about transfer logic
+                }
+        });
+    }
+
+    public void updateReplicaClocks(List<Integer> replicaVectorClock) {
+        for (int i = 0; i < replicaVectorClock.size(); i++) {
+            if (replicaVectorClock.get(i) > this.replicaVectorClock.get(i)) {
+                this.replicaVectorClock.set(i, replicaVectorClock.get(i));
+            }
+        }
+        debugPrint(String.format("New clock for server %s : %s", qualifier, this.replicaVectorClock.toString()));
     }
 }
