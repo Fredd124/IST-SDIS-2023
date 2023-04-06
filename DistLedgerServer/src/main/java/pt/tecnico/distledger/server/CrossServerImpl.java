@@ -13,7 +13,6 @@ import pt.tecnico.distledger.server.domain.operation.Operation;
 import io.grpc.stub.StreamObserver;
 
 import static io.grpc.Status.UNAVAILABLE;
-import static io.grpc.Status.CANCELLED;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,9 +59,8 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         } */
         Operation op = Converter.convertFromGrpc(request.getOperation());
         this.state.debugPrint("Received operation: " + op.toString());
-        this.state.addOp(op, null);
+        this.state.verifyOp(op, null);
         this.state.updateReplicaClocks(request.getReplicaTSList());
-        this.state.updateStableOps();
         PropagateOperationResponse response = PropagateOperationResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();

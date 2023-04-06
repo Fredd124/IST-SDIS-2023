@@ -93,6 +93,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void gossip(GossipRequest request,
             StreamObserver<GossipResponse> responseObserver) {
+        state.debugPrint(String.format("Propagating operation list %s", state.getLedgerState()));
         state.getLedgerState().forEach(op -> propagateToSecondary(op));
         responseObserver.onNext(GossipResponse.getDefaultInstance());
         responseObserver.onCompleted();

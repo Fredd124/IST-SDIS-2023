@@ -69,6 +69,7 @@ public class UserService {
             CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).addAllPrevTS(vectorClock).build(); 
             CreateAccountResponse response;
             debugPrint(String.format("Sent create account request to server %s with username %s as argument.",qualifier, username));
+            debugPrint(String.format("Sent vector clock %s from server.", vectorClock.toString()));
             response = stub.createAccount(request);
             System.out.println("OK");
             vectorClock = response.getTSList();
@@ -98,8 +99,6 @@ public class UserService {
             debugPrint(String.format("Received balance response from server with balance %d .", response.getValue()));
             System.out.println("OK");
             System.out.print(response);
-            vectorClock = response.getValueTSList();
-            debugPrint(String.format("Received vector clock %s from server.", vectorClock.toString()));
         } catch (StatusRuntimeException e) {
             debugPrint(
                     String.format("Caught exception : %s .", e.getMessage()));
@@ -121,6 +120,7 @@ public class UserService {
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).addAllPrevTS(vectorClock).build();
             TransferToResponse response;
             debugPrint(String.format("Sent transferTo request to server %s with from %s, dest %s and amount %d as arguments.",qualifier, from, dest, amount));
+            debugPrint(String.format("Sent vector clock %s from server.", vectorClock.toString()));
             response = stub.transferTo(request);
             System.out.println("OK");   
             vectorClock = response.getTSList();
