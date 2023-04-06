@@ -3,6 +3,7 @@ package pt.tecnico.distledger.adminclient.grpc;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.QualifierAdressPair;
 import pt.tecnico.distledger.utils.AdminServerCache;
 import pt.tecnico.distledger.utils.Utils;
 
@@ -29,14 +30,14 @@ public class AdminService {
 
     private boolean lookupService(String qualifier) {
         debugPrint(String.format("Sending lookup request to server DistLedger %s .", qualifier));
-        List<String> result = Utils.lookupOnDns(namingServerStub, qualifier);
+        List<QualifierAdressPair> result = Utils.lookupOnDns(namingServerStub, qualifier);
         debugPrint(String.format("Received lookup response from server with servers list %s .", 
             result.toString()));
         if (result.size() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
             return false;
         }
-        String address = result.get(0);
+        String address = result.get(0).getAddress();
         serverCache.addEntry(qualifier, address);
         return true;
     }
