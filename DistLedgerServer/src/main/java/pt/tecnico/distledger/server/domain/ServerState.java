@@ -144,6 +144,27 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
+    public void verifyOp(Operation op, List<Integer> clientVectorClock) {
+        switch(op.getType()) {
+            case("OP_CREATE_ACCOUNT"):
+                try {
+                    Operation newOp = createAccount(op.getAccount());
+                    addOp(newOp, clientVectorClock);
+                }
+                catch (ServerStateException e) {
+                    debugPrint("Repeated or invalid operation. Skiping operation...");
+                } 
+            case("OP_TRANSFER_TO"):
+                try {
+                    TransferOp transferOp = (TransferOp) op;
+                    Operation newOp = transfer(transferOp.getAccount(), transferOp.getDestAccount(), transferOp.getAmount());
+                    addOp(newOp, clientVectorClock);
+                } catch (ServerStateException e){
+                    debugPrint("Repeated or invalid operation. Skiping operation...");
+                }           
+        }
+    }
+
     public void addOp(Operation op, List<Integer> clientVectorClock) {
         ledger.add(op);
         int i = Utils.getIndexFromQualifier(qualifier);
