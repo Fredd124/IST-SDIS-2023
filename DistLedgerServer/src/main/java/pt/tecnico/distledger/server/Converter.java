@@ -30,9 +30,9 @@ public class Converter {
         DistLedgerCommonDefinitions.OperationType type = operation.getType();
         switch(type) {
             case OP_CREATE_ACCOUNT:
-                return new CreateOp(operation.getUserId());
+                return new CreateOp(operation.getUserId(), operation.getPrevTSList());
             case OP_TRANSFER_TO:
-                return new TransferOp(operation.getUserId(), operation.getDestUserId(), operation.getAmount());
+                return new TransferOp(operation.getUserId(), operation.getDestUserId(), operation.getAmount(), operation.getPrevTSList());
             case OP_UNSPECIFIED:
                 return null;
             default:

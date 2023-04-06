@@ -54,7 +54,7 @@ public class ServerState {
         }
         ServiceEntry serviceEntry = getService(serviceName);
         List<ServerEntry> serversList = serviceEntry.getServers();
-        if (qualifier == null) {
+        if (qualifier == "") {
             return serversList;
         }
         for (ServerEntry server : serversList) {

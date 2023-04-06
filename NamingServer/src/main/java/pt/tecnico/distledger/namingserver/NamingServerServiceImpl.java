@@ -5,6 +5,7 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.Register
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.QualifierAdressPair;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
 import pt.tecnico.distledger.namingserver.domain.exceptions.ServerStateException;
@@ -58,7 +59,8 @@ public class NamingServerServiceImpl extends NamingServerServiceImplBase {
             )
         );
         LookupResponse response = LookupResponse.newBuilder().addAllServers(
-            state.lookupService(serviceName, qualifier).stream().map(entry -> entry.getAddress()).collect(toList())).
+            state.lookupService(serviceName, qualifier).stream().map(entry -> 
+                QualifierAdressPair.newBuilder().setAddress(entry.getAddress()).setQualifier(entry.getQualifier()).build()).collect(toList())).
             build();
         state.debugPrint(String.format("Lookup result : %s", response.toString()));
         responseObserver.onNext(response);

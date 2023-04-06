@@ -15,7 +15,12 @@ message LookupRequest {
 }
 
 message LookupResponse {
-    repeated string servers = 1;
+    repeated QualifierAdressPair servers = 1;
+}
+
+message QualifierAdressPair {
+    string qualifier = 1;
+    string address = 2;
 }
 
 message DeleteRequest {

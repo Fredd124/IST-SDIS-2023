@@ -3,6 +3,7 @@ package pt.tecnico.distledger.userclient.grpc;
 import pt.tecnico.distledger.utils.UserServerCache;
 import pt.tecnico.distledger.utils.Utils;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.QualifierAdressPair;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceBlockingStub;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
@@ -41,12 +42,12 @@ public class UserService {
 
     public boolean lookupService(String qualifier) {
         debugPrint(String.format("Sending lookup request to server DistLedger, to lookup for server with qualifier %s .", qualifier));
-        List<String> result = Utils.lookupOnDns(dnsStub, qualifier);
+        List<QualifierAdressPair> result = Utils.lookupOnDns(dnsStub, qualifier);
         if (result.size() == 0) {
             System.out.println("No server found for qualifier " + qualifier);
             return false;
         }
-        String address = result.get(0);
+        String address = result.get(0).getAddress();
         debugPrint(String.format("Received lookup response from server with servers list %s .", result.toString()));
         serverCache.addEntry(qualifier, address);
         return true;

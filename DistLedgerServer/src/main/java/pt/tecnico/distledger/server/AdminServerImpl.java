@@ -6,6 +6,7 @@ import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.QualifierAdressPair;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.ActivateRequest;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.ActivateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.DeactivateRequest;
@@ -17,7 +18,6 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
 import pt.tecnico.distledger.utils.Utils;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
 
@@ -40,7 +40,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
     private final String NAMING_SERVER_TARGET = "localhost:5001";
     private NamingServerServiceGrpc.NamingServerServiceBlockingStub dnsStub;
     private final String SERVICE_NAME = "DistLedger";
-    private final String SECONDARY_SERVER_QUALIFIER = "B";
 
     public AdminServerImpl(ServerState state, DistLedgerServerCache serverCache) {
         this.state = state;
@@ -93,7 +92,17 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void gossip(GossipRequest request,
             StreamObserver<GossipResponse> responseObserver) {
-        state.getLedgerState().forEach(op -> propagateToSecondary(op));
+        List<String> targetQualifiers = Utils.lookupOnDns(dnsStub, "").stream()
+        .map(response -> response.getQualifier())
+        .collect(Collectors.toList());
+        targetQualifiers.stream()
+            .filter(qualifier -> !qualifier.equals(state.getQualifier().toString()))
+            .forEach(qualifier -> 
+                propagateToSecondary(state.getLedgerState()
+                        .stream()
+                        .filter(op -> op.isStable())
+                        .collect(Collectors.toList()), 
+                    qualifier));
         responseObserver.onNext(GossipResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
@@ -118,38 +127,27 @@ public class AdminServerImpl extends AdminServiceImplBase {
         responseObserver.onCompleted();
     }
 
-    private boolean propagateToSecondary(Operation op) {
+    private void propagateToSecondary(List<Operation> ops, String qualifier) {
         try {
-            if (! serverCache.distLedgerHasEntry(SECONDARY_SERVER_QUALIFIER)) {
+            if (! serverCache.distLedgerHasEntry(qualifier)) {
                 state.debugPrint(String.format("Sending lookup request to service %s", SERVICE_NAME));
-                List<String> result =  Utils.lookupOnDns(dnsStub, SECONDARY_SERVER_QUALIFIER);
+                List<QualifierAdressPair> result =  Utils.lookupOnDns(dnsStub, qualifier);
                 if (result.size() == 0) {
                     state.debugPrint(
-                        String.format("No server found for qualifier %s.", SECONDARY_SERVER_QUALIFIER)
+                        String.format("No server found for qualifier %s.", qualifier)
                     );
-                    return false;
                 }
-                String address = result.get(0);
+                String address = result.get(0).getAddress();
                 state.debugPrint("Got server address: " + address);
-                serverCache.addEntry(SECONDARY_SERVER_QUALIFIER, address);
+                serverCache.addEntry(qualifier, address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
-                 = serverCache.distLedgerGetEntry(SECONDARY_SERVER_QUALIFIER).getStub();
-            try {
-                DistLedgerCommonDefinitions.Operation operation = Converter.convertToGrpc(op);
-                PropagateOperationRequest propagateOperationRequest = PropagateOperationRequest.newBuilder()
-                    .setOperation(operation).addAllReplicaTS(state.getReplicaVectorClock()).build();
-                state.debugPrint("Sending propagate operation request");
-                stub.propagateOperation(propagateOperationRequest);
-                state.debugPrint("Propagated operation successfully");
-            } catch (StatusRuntimeException e) {
-                List<Operation> ledger = new ArrayList<>(state.getLedgerState());
-                ledger.add(op);
+                 = serverCache.distLedgerGetEntry(qualifier).getStub();
                 DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
-                    ledger.stream()
+                    ops.stream()
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
@@ -157,13 +155,10 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 state.debugPrint("Sending propagate request");
                 stub.propagateState(propagateRequest);
                 state.debugPrint("Propagated successfully");
-            }
-            return true;
         }         
         catch (StatusRuntimeException e ) {
-            serverCache.removeEntry(SECONDARY_SERVER_QUALIFIER);
+            serverCache.removeEntry(qualifier);
             state.debugPrint("Propagate failed for server in cache.");
-            return false;
         }
     }
 

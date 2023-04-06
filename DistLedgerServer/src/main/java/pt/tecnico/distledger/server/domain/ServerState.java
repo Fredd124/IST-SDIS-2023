@@ -24,7 +24,8 @@ public class ServerState {
 
     public ServerState(boolean debug, String address, Character qualifier) {
         this.ledger = Collections.synchronizedList(new ArrayList<>());
-        this.replicaVectorClock = Collections.synchronizedList(new ArrayList<>());
+        this.replicaVectorClock = Collections
+                .synchronizedList(new ArrayList<>());
         for (int i = 0; i < 3; i++) {
             this.replicaVectorClock.add(0);
         }
@@ -71,13 +72,15 @@ public class ServerState {
     }
 
     public void debugPrint(String message) {
-        if (debug) System.err.println(message);
+        if (debug)
+            System.err.println(message);
     }
 
-    public int balance(String userId, List<Integer> clientVectorClock) throws NotActiveException, UserDoesNotExistException{
+    public int balance(String userId, List<Integer> clientVectorClock)
+            throws NotActiveException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
-        } 
+        }
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
@@ -100,27 +103,29 @@ public class ServerState {
         return accountMap.containsKey(userId);
     }
 
-    public void createBroker() { 
+    public void createBroker() {
         accountMap.put(BROKER, BROKER_INIT_VALUE);
     }
 
-    public Operation createAccount(String userId) throws NotActiveException, UserAlreadyExistsEception {
+    public Operation createAccount(String userId, List<Integer> timeStamp)
+            throws NotActiveException, UserAlreadyExistsEception {
         if (!this.active) {
             throw new NotActiveException();
-        } 
+        }
         else if (this.containsUser(userId)) {
             throw new UserAlreadyExistsEception();
         }
-        return new CreateOp(userId);
+        return new CreateOp(userId, timeStamp);
     }
 
-    public Operation transfer(String fromAccount, String toAccount, int amount) throws NotActiveException, 
-            SourceUserDoesNotExistException, DestinationUserDoesNotExistException, 
-                SourceEqualsDestinationUserException, InvalidUserBalanceException, InvalidBalanceAmountException, 
-                    UserDoesNotExistException {
+    public Operation transfer(String fromAccount, String toAccount, int amount, List<Integer> timeStamp)
+            throws NotActiveException, SourceUserDoesNotExistException,
+            DestinationUserDoesNotExistException,
+            SourceEqualsDestinationUserException, InvalidUserBalanceException,
+            InvalidBalanceAmountException, UserDoesNotExistException {
         if (!this.active) {
             throw new NotActiveException();
-        } 
+        }
         else if (!this.containsUser(fromAccount)) {
             throw new SourceUserDoesNotExistException();
         }
@@ -135,8 +140,8 @@ public class ServerState {
         }
         else if (amount <= 0) {
             throw new InvalidBalanceAmountException();
-        }   
-        return new TransferOp(fromAccount, toAccount, amount);
+        }
+        return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
     public void addOp(Operation op, List<Integer> clientVectorClock) {
@@ -146,7 +151,8 @@ public class ServerState {
         if (clientVectorClock != null) {
             clientVectorClock.set(i, replicaVectorClock.get(i));
         }
-        debugPrint(String.format("New clock for server %s : %s", this.qualifier, this.replicaVectorClock.toString()));
+        debugPrint(String.format("New clock for server %s : %s", this.qualifier,
+                this.replicaVectorClock.toString()));
         updateStableOps();
     }
 
@@ -155,19 +161,23 @@ public class ServerState {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
             debugPrint("Created account: " + createOp.getAccount());
-        } 
+        }
         else if (op.getType().equals("OP_TRANSFER_TO")) {
             TransferOp transferOp = (TransferOp) op;
-            accountMap.put(transferOp.getAccount(), 
-                        accountMap.get(transferOp.getAccount()) - transferOp.getAmount());
-            accountMap.put(transferOp.getDestAccount(), 
-                        accountMap.get(transferOp.getDestAccount()) + transferOp.getAmount());
-            debugPrint("Transfered " + transferOp.getAmount() + " from " + transferOp.getAccount() + " to " + transferOp.getDestAccount());
+            accountMap.put(transferOp.getAccount(),
+                    accountMap.get(transferOp.getAccount())
+                            - transferOp.getAmount());
+            accountMap.put(transferOp.getDestAccount(),
+                    accountMap.get(transferOp.getDestAccount())
+                            + transferOp.getAmount());
+            debugPrint("Transfered " + transferOp.getAmount() + " from "
+                    + transferOp.getAccount() + " to "
+                    + transferOp.getDestAccount());
         }
     }
 
-
-    public void doOpList(List<Operation> missingOps, List<Integer> clientVectorClock) {
+    public void doOpList(List<Operation> missingOps,
+            List<Integer> clientVectorClock) {
         for (Operation op : missingOps) {
             this.doOp(op, clientVectorClock);
         }
@@ -175,15 +185,25 @@ public class ServerState {
 
     public void updateStableOps() {
         ledger.stream().forEach(operation -> {
-            if (! operation.isStable())
+            if (!operation.isStable() && isBiggerTimeStamp(operation.getTimeStamp()))
                 if (operation.getType().equals("OP_CREATE_ACCOUNT")) {
                     operation.setStable(true);
                     doOp(operation, null);
                 }
-                else if(operation.getType().equals("OP_TRANSFER_TO")) {
-                    // TODO : think about transfer logic
+                else if (operation.getType().equals("OP_TRANSFER_TO")) {
+                        operation.setStable(true);
+                        doOp(operation, null);
                 }
         });
+    }
+
+    private boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
+        for (int i = 0; i < requestTimeStamp.size(); i++) {
+            if (requestTimeStamp.get(i) > replicaVectorClock.get(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void updateReplicaClocks(List<Integer> replicaVectorClock) {
@@ -192,6 +212,7 @@ public class ServerState {
                 this.replicaVectorClock.set(i, replicaVectorClock.get(i));
             }
         }
-        debugPrint(String.format("New clock for server %s : %s", qualifier, this.replicaVectorClock.toString()));
+        debugPrint(String.format("New clock for server %s : %s", qualifier,
+                this.replicaVectorClock.toString()));
     }
 }
