@@ -151,10 +151,12 @@ public class AdminServerImpl extends AdminServiceImplBase {
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
-                    .setState(ledgerState).build();
+                    .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock()).build();
                 state.debugPrint("Sending propagate request");
                 stub.propagateState(propagateRequest);
-                state.debugPrint("Propagated successfully");
+                state.debugPrint(
+                    String.format("Propagated successfully %d operations.", ops.size())
+                );
         }         
         catch (StatusRuntimeException e ) {
             serverCache.removeEntry(qualifier);

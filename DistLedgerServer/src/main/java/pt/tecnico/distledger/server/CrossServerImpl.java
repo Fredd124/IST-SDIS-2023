@@ -35,11 +35,12 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
             .collect(Collectors.toList());
-        if (ops.size() > this.state.getLedgerState().size()) {
-            List<Operation> missingOps = ops.subList(this.state.getLedgerState().size(), ops.size());
-            this.state.debugPrint("Missing ops: " + missingOps.size());
-            this.state.doOpList(missingOps, null);
-        }
+        ops.forEach(op -> this.state.verifyOp(op));
+        this.state.debugPrint(
+            String.format("Updating replica clock for received clock %s", request.getReplicaTSList())
+        );
+        this.state.updateReplicaClocks(request.getReplicaTSList());
+        this.state.updateStableOps();
         PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
@@ -59,7 +60,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         } */
         Operation op = Converter.convertFromGrpc(request.getOperation());
         this.state.debugPrint("Received operation: " + op.toString());
-        this.state.verifyOp(op, null);
+        this.state.verifyOp(op);
         this.state.updateReplicaClocks(request.getReplicaTSList());
         PropagateOperationResponse response = PropagateOperationResponse.getDefaultInstance();
         responseObserver.onNext(response);

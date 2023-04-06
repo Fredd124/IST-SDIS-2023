@@ -15,11 +15,13 @@ public class Converter {
                         .setType(DistLedgerCommonDefinitions.OperationType.OP_TRANSFER_TO)
                         .setUserId(operation.getAccount())
                         .setDestUserId(((TransferOp) operation).getDestAccount())
-                        .setAmount(((TransferOp) operation).getAmount()).build();
+                        .setAmount(((TransferOp) operation).getAmount())
+                        .addAllPrevTS(operation.getTimeStamp()).build();
             case ("OP_CREATE_ACCOUNT"):
                 return DistLedgerCommonDefinitions.Operation.newBuilder()
                         .setType(DistLedgerCommonDefinitions.OperationType.OP_CREATE_ACCOUNT)
-                        .setUserId(operation.getAccount()).build();
+                        .setUserId(operation.getAccount())
+                        .addAllPrevTS(operation.getTimeStamp()).build();
             default:
                 return DistLedgerCommonDefinitions.Operation.newBuilder()
                 .setType(OperationType.OP_UNSPECIFIED).build();
