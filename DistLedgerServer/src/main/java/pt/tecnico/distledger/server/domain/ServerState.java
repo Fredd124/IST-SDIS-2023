@@ -174,7 +174,9 @@ public class ServerState {
         int i = Utils.getIndexFromQualifier(qualifier);
         replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
         if (clientVectorClock != null) {
-            clientVectorClock.set(i, replicaVectorClock.get(i));
+            for (i=0; i<3; i++) {
+                clientVectorClock.set(i, replicaVectorClock.get(i));
+            }
         }
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
