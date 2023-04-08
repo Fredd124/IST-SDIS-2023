@@ -19,4 +19,22 @@ public class Utils {
     public static int getIndexFromQualifier(Character qualifier) {
         return qualifier - 'A';
     }
+
+    public static int compareVectorClocks(List<Integer> a, List<Integer> b) {
+        int i;
+        for (i = 0; i < a.size(); i++) {
+            if (a.get(i) > b.get(i)) {
+                break;
+            }
+        }
+        if (i == a.size()) return -1; // a is bigger
+        for (i = 0; i < a.size(); i++) {
+            if (a.get(i) < b.get(i)) {
+                break;
+            }
+        }
+        if (i == a.size()) return 1; // b is bigger
+        return 0; //  no one is bigger
+    } 
+    
 }

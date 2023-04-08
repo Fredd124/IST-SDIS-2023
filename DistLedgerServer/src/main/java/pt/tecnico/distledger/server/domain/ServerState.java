@@ -146,6 +146,7 @@ public class ServerState {
 
     public void verifyOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
         List<Integer> clientVectorClock = new ArrayList<>(op.getTimeStamp());
+        debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getTimeStamp()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
                 try {
@@ -225,12 +226,7 @@ public class ServerState {
     }
 
     private boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
-        for (int i = 0; i < requestTimeStamp.size(); i++) {
-            if (requestTimeStamp.get(i) > replicaVectorClock.get(i)) {
-                return false;
-            }
-        }
-        return true;
+        return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == -1;
     }
 
     public void updateReplicaClocks(List<Integer> replicaVectorClock) {
