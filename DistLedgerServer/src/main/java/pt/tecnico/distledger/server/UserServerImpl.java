@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.exceptions.NotActiveException;
+import pt.tecnico.distledger.server.domain.exceptions.NotUpToDateException;
 import pt.tecnico.distledger.server.domain.exceptions.ServerStateException;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.Operation;
@@ -15,6 +16,7 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceIm
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
+import static io.grpc.Status.CANCELLED;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -46,6 +48,12 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint(
                     String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+        catch (NotUpToDateException e) {
+                state.debugPrint(
+                    String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(CANCELLED.withDescription(e.getMessage())
                     .asRuntimeException());
         }
         catch (ServerStateException e) {

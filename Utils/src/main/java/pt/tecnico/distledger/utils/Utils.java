@@ -27,13 +27,13 @@ public class Utils {
                 break;
             }
         }
-        if (i == a.size()) return -1; // a is bigger
+        if (i == a.size()) return 1; // b is bigger
         for (i = 0; i < a.size(); i++) {
             if (a.get(i) < b.get(i)) {
                 break;
             }
         }
-        if (i == a.size()) return 1; // b is bigger
+        if (i == a.size()) return -1; // a is bigger
         return 0; //  no one is bigger
     } 
     

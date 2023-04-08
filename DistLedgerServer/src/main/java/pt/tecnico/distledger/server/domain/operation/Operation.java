@@ -33,6 +33,10 @@ public class Operation {
     public List<Integer> getTimeStamp() {
         return this.timeStamp;
     }
+    
+    public void setTimeStamp(List<Integer> timeStamp) {
+        this.timeStamp = timeStamp;
+    }
 
     public String getType(){
         throw new UnsupportedOperationException();

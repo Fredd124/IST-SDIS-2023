@@ -14,6 +14,7 @@ public class ServerState {
 
     private List<Operation> ledger;
     private List<Integer> replicaVectorClock;
+    private List<Integer> estimateVectorClock;
     private String address;
     private Character qualifier;
     private boolean active;
@@ -77,12 +78,15 @@ public class ServerState {
     }
 
     public int balance(String userId, List<Integer> clientVectorClock)
-            throws NotActiveException, UserDoesNotExistException {
+            throws NotActiveException, UserDoesNotExistException, NotUpToDateException {
         if (!this.active) {
             throw new NotActiveException();
         }
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
+        }
+        else if (isSmallerTimeStamp(clientVectorClock)) {
+            throw new NotUpToDateException();
         }
         return getBalance(userId);
     }
@@ -177,6 +181,7 @@ public class ServerState {
         if (clientVectorClock != null) {
             clientVectorClock.set(i, replicaVectorClock.get(i));
         }
+        op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
         updateStableOps();
@@ -223,7 +228,18 @@ public class ServerState {
         });
     }
 
+    public boolean estimatedGossip(Operation op, String qualifierString) {
+        Character qualifierCharacter = qualifierString.charAt(0);
+        int index = Utils.getIndexFromQualifier(qualifierCharacter);
+        debugPrint(String.format("Comparing %s with %s", op.getTimeStamp().get(index), replicaVectorClock.get(index)));
+        return op.getTimeStamp().get(index) >= replicaVectorClock.get(index);
+    }
+
     private boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
+        return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == 1;
+    }
+
+    private boolean isSmallerTimeStamp(List<Integer> requestTimeStamp) {
         return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == -1;
     }
 

@@ -101,6 +101,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 propagateToSecondary(state.getLedgerState()
                         .stream()
                         .filter(op -> op.isStable())
+                        .filter(op -> this.state.estimatedGossip(op, qualifier))
                         .collect(Collectors.toList()), 
                     qualifier));
         responseObserver.onNext(GossipResponse.getDefaultInstance());
@@ -128,6 +129,10 @@ public class AdminServerImpl extends AdminServiceImplBase {
     }
 
     private void propagateToSecondary(List<Operation> ops, String qualifier) {
+        if (ops.size() == 0) {
+            this.state.debugPrint("No operations to propagate.");
+            return;
+        }
         try {
             if (! serverCache.distLedgerHasEntry(qualifier)) {
                 state.debugPrint(String.format("Sending lookup request to service %s", SERVICE_NAME));
