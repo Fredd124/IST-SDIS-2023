@@ -150,6 +150,10 @@ public class ServerState {
 
     public void verifyOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
         List<Integer> clientVectorClock = new ArrayList<>(op.getTimeStamp());
+        if (isRepeatedOp(op)) {
+            debugPrint(String.format("Operation %s is repeated", op.getType()));
+            return;
+        }
         debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getTimeStamp()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
@@ -178,18 +182,14 @@ public class ServerState {
         ledger.add(op);
         int i = Utils.getIndexFromQualifier(qualifier);
         replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
-        if (clientVectorClock != null) {
-            for (i=0; i<3; i++) {
-                clientVectorClock.set(i, replicaVectorClock.get(i));
-            }
-        }
-        op.setTimeStamp(clientVectorClock);
+        clientVectorClock.set(i, replicaVectorClock.get(i));
+        if (op.getTimeStamp() == null) op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
         updateStableOps();
     }
 
-    public void doOp(Operation op, List<Integer> clientVectorClock) {
+    public void doOp(Operation op, List<Integer> clientVectorClock) { /** TODO: remove vector clock if not used */
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
@@ -215,7 +215,7 @@ public class ServerState {
             this.doOp(op, clientVectorClock);
         }
     }
-
+/** TODO : remove if else if no conditions added */
     public void updateStableOps() {
         ledger.stream().forEach(operation -> {
             if (!operation.isStable() && isBiggerTimeStamp(operation.getTimeStamp()))
@@ -235,6 +235,11 @@ public class ServerState {
         int index = Utils.getIndexFromQualifier(qualifierCharacter);
         debugPrint(String.format("Comparing %s with %s", op.getTimeStamp().get(index), replicaVectorClock.get(index)));
         return op.getTimeStamp().get(index) >= replicaVectorClock.get(index);
+    }
+
+    public boolean isRepeatedOp(Operation op) {
+        debugPrint(String.format("Checking if operation %s is repeated %s", op.getType(), op.getTimeStamp()));
+        return ledger.stream().anyMatch(operation -> op.getTimeStamp().equals(operation.getTimeStamp()));
     }
 
     private boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
