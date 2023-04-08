@@ -148,18 +148,13 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
-    public void verifyOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
-        List<Integer> clientVectorClock = new ArrayList<>(op.getTimeStamp());
-        if (isRepeatedOp(op)) {
-            debugPrint(String.format("Operation %s is repeated", op.getType()));
-            return;
-        }
+    public boolean verifyOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
         debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getTimeStamp()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
                 try {
-                    Operation newOp = createAccount(op.getAccount(), op.getTimeStamp());
-                    addOp(newOp, clientVectorClock);
+                    createAccount(op.getAccount(), op.getTimeStamp());
+                    return true;
                 }
                 catch (ServerStateException e) {
                     debugPrint(String.format("Invalid operation for account %s : %s",op.getAccount(), e.getMessage()));
@@ -168,14 +163,15 @@ public class ServerState {
             case("OP_TRANSFER_TO"):
                 try {
                     TransferOp transferOp = (TransferOp) op;
-                    Operation newOp = transfer(transferOp.getAccount(), transferOp.getDestAccount(), 
+                    transfer(transferOp.getAccount(), transferOp.getDestAccount(), 
                         transferOp.getAmount(), op.getTimeStamp());
-                    addOp(newOp, clientVectorClock);
+                    return true;
                 } catch (ServerStateException e){
                     debugPrint(String.format("Invalid operation : %s", e.getMessage())); // TODO: work on this print
                 }
                 break;
         }
+        return false;
     }
 
     public void addOp(Operation op, List<Integer> clientVectorClock) {
@@ -190,6 +186,7 @@ public class ServerState {
     }
 
     public void doOp(Operation op, List<Integer> clientVectorClock) { /** TODO: remove vector clock if not used */
+        if (! verifyOp(op)) return;
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);

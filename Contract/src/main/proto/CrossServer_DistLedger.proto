@@ -19,16 +19,7 @@ message ProvideStateResponse {
   LedgerState state = 1;
 }
 
-message PropagateOperationRequest {
-  Operation operation = 1;
-  int64 ledgerSize = 2;
-  repeated int32 replicaTS = 3;
-}
-
-message PropagateOperationResponse {}
-
 service DistLedgerCrossServerService {
   rpc propagateState(PropagateStateRequest) returns (PropagateStateResponse);
   rpc provideState(ProvideStateRequest) returns (ProvideStateResponse);
-  rpc propagateOperation(PropagateOperationRequest) returns (PropagateOperationResponse);
 }
