@@ -11,8 +11,6 @@ public class ServerState {
     
     private Map<String, ServiceEntry> services = Collections.synchronizedMap(new HashMap<>());
     private boolean isDebug;
-    private final String MAIN_SERVER_QUALIFIER = "A";
-    private final String SECONDARY_SERVER_QUALIFIER = "B";
 
     public ServerState(boolean isDebug) {
         this.isDebug = isDebug;
@@ -35,7 +33,7 @@ public class ServerState {
         if (!services.containsKey(serviceName)) {
             addService(serviceName);
         } 
-        if (!qualifier.equals(MAIN_SERVER_QUALIFIER) && !qualifier.equals(SECONDARY_SERVER_QUALIFIER)) {
+        if (qualifier.length() != 1) {
             throw new InvalidQualifier();
         }
         ServiceEntry serviceEntry = getService(serviceName);

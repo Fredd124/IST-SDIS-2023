@@ -166,6 +166,7 @@ public class ServerState {
     }
 
     public void doOp(Operation op, List<Integer> clientVectorClock) { /** TODO: remove vector clock if not used */
+        if (! verifyOp(op)) return;
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);

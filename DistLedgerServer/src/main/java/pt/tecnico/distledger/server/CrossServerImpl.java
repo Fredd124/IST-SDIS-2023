@@ -3,8 +3,6 @@ package pt.tecnico.distledger.server;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationRequest;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateOperationResponse;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
 import pt.tecnico.distledger.server.domain.ServerState;
@@ -15,6 +13,7 @@ import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.UNAVAILABLE;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
@@ -35,34 +34,21 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
             .collect(Collectors.toList());
-        ops.forEach(op -> this.state.verifyOp(op));
+        ops.forEach(op -> {
+            List<Integer> clientVectorClock = new ArrayList<>(op.getTimeStamp());
+            if (this.state.isRepeatedOp(op)) {
+                this.state.debugPrint(String.format("Operation %s is repeated", op.getType()));
+                return;
+            }
+            this.state.verifyOp(op);
+            this.state.addOp(op, clientVectorClock);
+        });
         this.state.debugPrint(
             String.format("Updating replica clock for received clock %s", request.getReplicaTSList())
         );
         this.state.updateReplicaClocks(request.getReplicaTSList());
         this.state.updateStableOps();
         PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
-    }
-
-    @Override
-    public void propagateOperation(PropagateOperationRequest request, StreamObserver<PropagateOperationResponse> responseObserver) {
-        if (!state.isActive()){
-            state.debugPrint("Server is innactive.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
-            return;
-        }
-        /* if (state.getLedgerState().size() != request.getLedgerSize()) {
-            state.debugPrint("Ledger size is different.");
-            responseObserver.onError(CANCELLED.withDescription("Ledger size is different.").asRuntimeException());
-            return;
-        } */
-        Operation op = Converter.convertFromGrpc(request.getOperation());
-        this.state.debugPrint("Received operation: " + op.toString());
-        this.state.verifyOp(op);
-        this.state.updateReplicaClocks(request.getReplicaTSList());
-        PropagateOperationResponse response = PropagateOperationResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
