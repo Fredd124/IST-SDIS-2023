@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -89,7 +90,8 @@ public class ServerState {
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
-        else if (isBiggerTimeStampValue(clientVectorClock)) {
+        else if (! isBiggerTimeStampValue(clientVectorClock)) {
+            debugPrint("clientVectorClock: " + clientVectorClock + " valueVectorClock: " + valueVectorClock);
             throw new NotUpToDateException(); // THIS?
         }
         return getBalance(userId);
@@ -162,6 +164,7 @@ public class ServerState {
         ledger.add(op);
         int i = Utils.getIndexFromQualifier(qualifier);
         replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
+        debugPrint("test " + valueVectorClock.toString());
         clientVectorClock.set(i, replicaVectorClock.get(i));
         op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
@@ -189,6 +192,8 @@ public class ServerState {
         for (int i = 0; i < replicaVectorClock.size(); i++) {
            valueVectorClock.set(i, Math.max(valueVectorClock.get(i), replicaVectorClock.get(i)));
         }
+        debugPrint(String.format("New value clock for server %s : %s", this.qualifier,
+                this.valueVectorClock.toString()));
     }
 
     public void frontendRequest(Operation op, List<Integer> clientVectorClock) {
@@ -218,11 +223,13 @@ public class ServerState {
 
     public List<Operation> getExecutableOpsSorted() {
         List<Operation> executableOps = new ArrayList<Operation>();
+        System.out.println("ledger size: " + ledger.size());
         for (Operation op : ledger) {
             if (!op.isStable()) {
                 executableOps.add(op);
             }
         }
+        System.out.println("executableOps size: " + executableOps.size());
         Collections.sort(executableOps, new Comparator<Operation>() {
             @Override
             public int compare(Operation o1, Operation o2) {
@@ -234,6 +241,7 @@ public class ServerState {
                 else return 0;
             }
         });
+        System.out.println("executableOps size: " + executableOps.size());
         return executableOps;
     }
 
@@ -244,8 +252,10 @@ public class ServerState {
             debugPrint(String.format("Operation %s with clock %s", op.getType(), op.getPrev()));
         }
         for (Operation op : executableOps) {
-            op.setStable(true);
-            doOp(op, op.getTimeStamp());
+            if (isBiggerTimeStampValue(op.getPrev())) {
+                op.setStable(true);
+                doOp(op, op.getTimeStamp());
+            }
         }
     }
 
@@ -275,7 +285,7 @@ public class ServerState {
                 this.replicaVectorClock.set(i, replicaVectorClock.get(i));
             }
         }
-        debugPrint(String.format("New clock for server %s : %s", qualifier,
+        debugPrint(String.format("New replica clock for server %s : %s", qualifier,
                 this.replicaVectorClock.toString()));
     }
 }
