@@ -15,6 +15,7 @@ public class ServerState {
 
     private List<Operation> ledger;
     private List<Integer> replicaVectorClock;
+    private List<Integer> valueVectorClock;
     private String address;
     private Character qualifier;
     private boolean active;
@@ -27,8 +28,11 @@ public class ServerState {
         this.ledger = Collections.synchronizedList(new ArrayList<>());
         this.replicaVectorClock = Collections
                 .synchronizedList(new ArrayList<>());
+        this.valueVectorClock = Collections
+                .synchronizedList(new ArrayList<>());
         for (int i = 0; i < 3; i++) {
             this.replicaVectorClock.add(0);
+            this.valueVectorClock.add(0);
         }
         this.active = true;
         this.debug = debug;
@@ -85,7 +89,7 @@ public class ServerState {
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
-        else if (isSmallerTimeStamp(clientVectorClock)) {
+        else if (isBiggerTimeStampValue(clientVectorClock)) {
             throw new NotUpToDateException(); // THIS?
         }
         return getBalance(userId);
@@ -141,14 +145,14 @@ public class ServerState {
             debugPrint(String.format("Operation %s is repeated", op.getType()));
             return false;
         }
-        debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getTimeStamp()));
+        debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getPrev()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
                 return ! this.containsUser(op.getAccount());
             case("OP_TRANSFER_TO"):
                 TransferOp transferOp = (TransferOp) op;
-                return ! this.containsUser(transferOp.getAccount()) || ! this.containsUser(transferOp.getDestAccount())
-                    || ! (this.getBalance(transferOp.getAccount()) >= transferOp.getAmount());
+                return  this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount())
+                    && this.getBalance(transferOp.getAccount()) >= transferOp.getAmount();
             default:
                 return false;
         }
@@ -159,7 +163,7 @@ public class ServerState {
         int i = Utils.getIndexFromQualifier(qualifier);
         replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
         clientVectorClock.set(i, replicaVectorClock.get(i));
-        if (op.getTimeStamp() == null) op.setTimeStamp(clientVectorClock);
+        op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
     }
@@ -178,10 +182,12 @@ public class ServerState {
             accountMap.put(transferOp.getDestAccount(),
                     accountMap.get(transferOp.getDestAccount())
                             + transferOp.getAmount());
-            debugPrint("Alice account" + accountMap.get("Alice"));
             debugPrint("Transfered " + transferOp.getAmount() + " from "
                     + transferOp.getAccount() + " to "
                     + transferOp.getDestAccount());
+        }
+        for (int i = 0; i < replicaVectorClock.size(); i++) {
+           valueVectorClock.set(i, Math.max(valueVectorClock.get(i), replicaVectorClock.get(i)));
         }
     }
 
@@ -194,20 +200,26 @@ public class ServerState {
     }
 
     public boolean canExecute(Operation op) {
-        return !op.isStable() && isBiggerTimeStamp(op.getTimeStamp());
+        debugPrint(op.getPrev() + " " + valueVectorClock);
+        return !op.isStable() && isBiggerTimeStampValue(op.getPrev());
     }
 
-    public void doOpList(List<Operation> missingOps,
-            List<Integer> clientVectorClock) {
-        for (Operation op : missingOps) {
-            this.doOp(op, clientVectorClock);
+    public boolean canBeStable(Operation op) { /** TODO : maybe not necessary */
+        switch(op.getType()) {
+            case("OP_CREATE_ACCOUNT"):
+                return true;
+            case("OP_TRANSFER_TO"):
+            TransferOp transferOp = (TransferOp) op;
+                return  this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount());
+            default:
+                return false;
         }
     }
 
     public List<Operation> getExecutableOpsSorted() {
         List<Operation> executableOps = new ArrayList<Operation>();
         for (Operation op : ledger) {
-            if (!op.isStable() && isBiggerTimeStamp(op.getTimeStamp())) {
+            if (!op.isStable()) {
                 executableOps.add(op);
             }
         }
@@ -215,7 +227,7 @@ public class ServerState {
             @Override
             public int compare(Operation o1, Operation o2) {
                 int compareResult = Utils.compareVectorClocks(o1.getTimeStamp(), o2.getTimeStamp());
-                if (compareResult != 0) return compareResult;
+                if (compareResult != 0) return - compareResult;
                 if (o1.getType().equals("OP_CREATE_ACCOUNT") && o2.getType().equals("OP_Create_ACCOUNT")) return 0;
                 else if (o1.getType().equals("OP_CREATE_ACCOUNT")) return -1;
                 else if (o2.getType().equals("OP_CREATE_ACCOUNT")) return 1;
@@ -225,39 +237,36 @@ public class ServerState {
         return executableOps;
     }
 
-/** TODO : remove if else if no conditions added */
     public void updateStableOps() {
-        ledger.stream().forEach(operation -> {
-            if (!operation.isStable() && isBiggerTimeStamp(operation.getTimeStamp()))
-                if (operation.getType().equals("OP_CREATE_ACCOUNT")) {
-                    operation.setStable(true);
-                    doOp(operation, null);
-                }
-                else if (operation.getType().equals("OP_TRANSFER_TO")) {
-                        operation.setStable(true);
-                        doOp(operation, null);
-                }
-        });
+        List<Operation> executableOps = getExecutableOpsSorted();
+        debugPrint("Sorted ops: ");
+        for (Operation op : executableOps) {
+            debugPrint(String.format("Operation %s with clock %s", op.getType(), op.getPrev()));
+        }
+        for (Operation op : executableOps) {
+            op.setStable(true);
+            doOp(op, op.getTimeStamp());
+        }
     }
 
     public boolean estimatedGossip(Operation op, String qualifierString) {
         Character qualifierCharacter = qualifierString.charAt(0);
         int index = Utils.getIndexFromQualifier(qualifierCharacter);
-        debugPrint(String.format("Comparing %s with %s", op.getTimeStamp().get(index), replicaVectorClock.get(index)));
-        return op.getTimeStamp().get(index) >= replicaVectorClock.get(index);
+        debugPrint(String.format("Comparing %s with %s", op.getPrev().get(index), replicaVectorClock.get(index)));
+        return op.getPrev().get(index) >= replicaVectorClock.get(index);
     }
 
     public boolean isRepeatedOp(Operation op) {
-        debugPrint(String.format("Checking if operation %s is repeated %s", op.getType(), op.getTimeStamp()));
-        return ledger.stream().anyMatch(operation -> op.getTimeStamp().equals(operation.getTimeStamp()));
+        debugPrint(String.format("Checking if operation %s is repeated %s", op.getType(), op.getPrev()));
+        return ledger.stream().anyMatch(operation -> op.getPrev().equals(operation.getTimeStamp()));
     }
 
-    public boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
-        return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == 1;
+    public boolean isBiggerTimeStampValue(List<Integer> requestTimeStamp) {
+        return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == 1;
     }
 
     private boolean isSmallerTimeStamp(List<Integer> requestTimeStamp) {
-        return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == -1;
+        return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == -1;
     }
 
     public void updateReplicaClocks(List<Integer> replicaVectorClock) {

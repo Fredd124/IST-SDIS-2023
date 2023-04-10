@@ -72,7 +72,7 @@ public class UserServerImpl extends UserServiceImplBase {
                 "Received create account request from userId : %s .", userId));
         Operation done = null;
         try {
-            done = state.createAccount(userId, null);
+            done = state.createAccount(userId, request.getPrevTSList());
             state.debugPrint(
                     String.format("Created operation to create account for user %s .", userId));
             state.debugPrint("Adding operation to ledger.");
@@ -110,7 +110,7 @@ public class UserServerImpl extends UserServiceImplBase {
                 fromUserId, toUserId, value));
         Operation done = null;
         try {
-            done = state.transfer(fromUserId, toUserId, value, null);
+            done = state.transfer(fromUserId, toUserId, value, request.getPrevTSList());
             state.debugPrint(String.format(
                     "Transfered %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
