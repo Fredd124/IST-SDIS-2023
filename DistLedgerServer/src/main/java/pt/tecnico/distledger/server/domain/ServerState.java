@@ -86,7 +86,7 @@ public class ServerState {
             throw new UserDoesNotExistException();
         }
         else if (isSmallerTimeStamp(clientVectorClock)) {
-            throw new NotUpToDateException();
+            throw new NotUpToDateException(); // THIS?
         }
         return getBalance(userId);
     }
@@ -116,9 +116,6 @@ public class ServerState {
         if (!this.active) {
             throw new NotActiveException();
         }
-        else if (this.containsUser(userId)) {
-            throw new UserAlreadyExistsEception();
-        }
         return new CreateOp(userId, timeStamp);
     }
 
@@ -130,17 +127,8 @@ public class ServerState {
         if (!this.active) {
             throw new NotActiveException();
         }
-        else if (!this.containsUser(fromAccount)) {
-            throw new SourceUserDoesNotExistException();
-        }
-        else if (!this.containsUser(toAccount)) {
-            throw new DestinationUserDoesNotExistException();
-        }
         else if (fromAccount.equals(toAccount)) {
             throw new SourceEqualsDestinationUserException();
-        }
-        else if (this.getBalance(fromAccount) < amount) {
-            throw new InvalidUserBalanceException();
         }
         else if (amount <= 0) {
             throw new InvalidBalanceAmountException();
@@ -148,33 +136,21 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
-    public void verifyOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
-        List<Integer> clientVectorClock = new ArrayList<>(op.getTimeStamp());
+    public boolean verifyIfCanExecuteOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
         if (isRepeatedOp(op)) {
             debugPrint(String.format("Operation %s is repeated", op.getType()));
-            return;
+            return false;
         }
         debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getTimeStamp()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
-                try {
-                    Operation newOp = createAccount(op.getAccount(), op.getTimeStamp());
-                    addOp(newOp, clientVectorClock);
-                }
-                catch (ServerStateException e) {
-                    debugPrint(String.format("Invalid operation for account %s : %s",op.getAccount(), e.getMessage()));
-                }
-                break; 
+                return this.containsUser(op.getAccount());
             case("OP_TRANSFER_TO"):
-                try {
-                    TransferOp transferOp = (TransferOp) op;
-                    Operation newOp = transfer(transferOp.getAccount(), transferOp.getDestAccount(), 
-                        transferOp.getAmount(), op.getTimeStamp());
-                    addOp(newOp, clientVectorClock);
-                } catch (ServerStateException e){
-                    debugPrint(String.format("Invalid operation : %s", e.getMessage())); // TODO: work on this print
-                }
-                break;
+                TransferOp transferOp = (TransferOp) op;
+                return this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount())
+                        && this.getBalance(transferOp.getAccount()) >= transferOp.getAmount();
+            default:
+                return false;
         }
     }
 
@@ -203,6 +179,7 @@ public class ServerState {
             accountMap.put(transferOp.getDestAccount(),
                     accountMap.get(transferOp.getDestAccount())
                             + transferOp.getAmount());
+            debugPrint("Alice account" + accountMap.get("Alice"));
             debugPrint("Transfered " + transferOp.getAmount() + " from "
                     + transferOp.getAccount() + " to "
                     + transferOp.getDestAccount());

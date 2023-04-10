@@ -101,7 +101,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 propagateToSecondary(state.getLedgerState()
                         .stream()
                         .filter(op -> op.isStable())
-                        .filter(op -> this.state.estimatedGossip(op, qualifier))
                         .collect(Collectors.toList()), 
                     qualifier));
         responseObserver.onNext(GossipResponse.getDefaultInstance());
