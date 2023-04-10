@@ -9,6 +9,13 @@ public class Operation {
     private List<Integer> timeStamp;
     List<Integer> prev;
 
+    public Operation(String fromAccount, List<Integer> prev, List<Integer> timeStamp) {
+        this.account = fromAccount;
+        this.stable = false;
+        this.prev = prev;
+        this.timeStamp = timeStamp;
+    }
+
     public Operation(String fromAccount, List<Integer> prev) {
         this.account = fromAccount;
         this.stable = false;

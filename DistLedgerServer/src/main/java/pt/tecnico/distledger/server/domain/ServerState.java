@@ -143,10 +143,6 @@ public class ServerState {
     }
 
     public boolean verifyIfCanExecuteOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
-        if (isRepeatedOp(op)) {
-            debugPrint(String.format("Operation %s is repeated", op.getType()));
-            return false;
-        }
         debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getPrev()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
@@ -166,7 +162,7 @@ public class ServerState {
         replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
         debugPrint("test " + valueVectorClock.toString());
         clientVectorClock.set(i, replicaVectorClock.get(i));
-        op.setTimeStamp(clientVectorClock);
+        if(op.getTimeStamp() == null) op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
     }
@@ -190,10 +186,8 @@ public class ServerState {
                     + transferOp.getDestAccount());
         }
         for (int i = 0; i < replicaVectorClock.size(); i++) {
-           valueVectorClock.set(i, Math.max(valueVectorClock.get(i), replicaVectorClock.get(i)));
+           valueVectorClock.set(i, Math.max(valueVectorClock.get(i), replicaVectorClock.get(i))); /* FIXME : maybe here is op.ts */
         }
-        debugPrint(String.format("New value clock for server %s : %s", this.qualifier,
-                this.valueVectorClock.toString()));
     }
 
     public void frontendRequest(Operation op, List<Integer> clientVectorClock) {
@@ -207,18 +201,6 @@ public class ServerState {
     public boolean canExecute(Operation op) {
         debugPrint(op.getPrev() + " " + valueVectorClock);
         return !op.isStable() && isBiggerTimeStampValue(op.getPrev());
-    }
-
-    public boolean canBeStable(Operation op) { /** TODO : maybe not necessary */
-        switch(op.getType()) {
-            case("OP_CREATE_ACCOUNT"):
-                return true;
-            case("OP_TRANSFER_TO"):
-            TransferOp transferOp = (TransferOp) op;
-                return  this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount());
-            default:
-                return false;
-        }
     }
 
     public List<Operation> getExecutableOpsSorted() {
@@ -252,7 +234,7 @@ public class ServerState {
             debugPrint(String.format("Operation %s with clock %s", op.getType(), op.getPrev()));
         }
         for (Operation op : executableOps) {
-            if (isBiggerTimeStampValue(op.getPrev())) {
+            if (isBiggerTimeStampValue(op.getPrev()) && verifyIfCanExecuteOp(op)) {
                 op.setStable(true);
                 doOp(op, op.getTimeStamp());
             }
@@ -267,12 +249,16 @@ public class ServerState {
     }
 
     public boolean isRepeatedOp(Operation op) {
-        debugPrint(String.format("Checking if operation %s is repeated %s", op.getType(), op.getPrev()));
-        return ledger.stream().anyMatch(operation -> op.getPrev().equals(operation.getTimeStamp()));
+        debugPrint(String.format("Comparing r.ts %s with replicaTS %s", op.getTimeStamp(), replicaVectorClock));
+        return isBiggerTimeStampReplica(op.getTimeStamp());
     }
 
     public boolean isBiggerTimeStampValue(List<Integer> requestTimeStamp) {
         return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == 1;
+    }
+
+    boolean isBiggerTimeStampReplica(List<Integer> requestTimeStamp) {
+        return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == 1;
     }
 
     private boolean isSmallerTimeStamp(List<Integer> requestTimeStamp) {

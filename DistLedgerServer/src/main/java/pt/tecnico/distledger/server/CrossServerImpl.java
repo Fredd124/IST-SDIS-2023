@@ -32,16 +32,13 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             return;
         }
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
-        this.state.updateReplicaClocks(request.getReplicaTSList());
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
-            .collect(Collectors.toList());
+        .collect(Collectors.toList());
         ops.forEach(op -> {
             List<Integer> clientVectorClock = new ArrayList<>(op.getPrev());
-            if (this.state.verifyIfCanExecuteOp(op)) {
-                this.state.addOp(op, clientVectorClock);
-            }
-            System.out.println("Added op: " + op.getPrev());
+            if (! this.state.isRepeatedOp(op)) this.state.addOp(op, clientVectorClock);
         });
+        this.state.updateReplicaClocks(request.getReplicaTSList());
         this.state.debugPrint(
             String.format("Updating replica clock for received clock %s", request.getReplicaTSList())
         );

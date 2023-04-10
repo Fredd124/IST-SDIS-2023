@@ -4,6 +4,10 @@ import java.util.List;
 
 public class CreateOp extends Operation {
 
+    public CreateOp(String account, List<Integer> prev, List<Integer> timeStamp) {
+        super(account, prev, timeStamp);
+    }
+
     public CreateOp(String account, List<Integer> timeStamp) {
         super(account, timeStamp);
     }
