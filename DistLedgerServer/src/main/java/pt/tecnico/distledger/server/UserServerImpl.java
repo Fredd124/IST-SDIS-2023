@@ -78,7 +78,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint("Adding operation to ledger.");
             List<Integer> copyClientVectorClock = new ArrayList<Integer>();
             request.getPrevTSList().forEach(value -> copyClientVectorClock.add(value));
-            state.addOp(done, copyClientVectorClock);
+            state.frontendRequest(done, copyClientVectorClock);
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
                     .addAllTS(copyClientVectorClock)
                     .build();
@@ -117,7 +117,7 @@ public class UserServerImpl extends UserServiceImplBase {
             state.debugPrint("Adding operation to ledger.");
             List<Integer> copyClientVectorClock = new ArrayList<Integer>();
             request.getPrevTSList().forEach(clock -> copyClientVectorClock.add(clock));
-            state.addOp(done, copyClientVectorClock);
+            state.frontendRequest(done, copyClientVectorClock);
             TransferToResponse response = TransferToResponse.newBuilder()
                     .addAllTS(copyClientVectorClock).build();
             responseObserver.onNext(response);

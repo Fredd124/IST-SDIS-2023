@@ -9,12 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collections;
+import java.util.Comparator;
 
 public class ServerState {
 
     private List<Operation> ledger;
     private List<Integer> replicaVectorClock;
-    private List<Integer> estimateVectorClock;
     private String address;
     private Character qualifier;
     private boolean active;
@@ -144,11 +144,11 @@ public class ServerState {
         debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getTimeStamp()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
-                return this.containsUser(op.getAccount());
+                return ! this.containsUser(op.getAccount());
             case("OP_TRANSFER_TO"):
                 TransferOp transferOp = (TransferOp) op;
-                return this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount())
-                        && this.getBalance(transferOp.getAccount()) >= transferOp.getAmount();
+                return ! this.containsUser(transferOp.getAccount()) || ! this.containsUser(transferOp.getDestAccount())
+                    || ! (this.getBalance(transferOp.getAccount()) >= transferOp.getAmount());
             default:
                 return false;
         }
@@ -162,11 +162,9 @@ public class ServerState {
         if (op.getTimeStamp() == null) op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
-        updateStableOps();
     }
 
     public void doOp(Operation op, List<Integer> clientVectorClock) { /** TODO: remove vector clock if not used */
-        if (! verifyOp(op)) return;
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
@@ -187,12 +185,46 @@ public class ServerState {
         }
     }
 
+    public void frontendRequest(Operation op, List<Integer> clientVectorClock) {
+        addOp(op, clientVectorClock);
+        if (canExecute(op)) {
+            op.setStable(true);
+            doOp(op, clientVectorClock);
+        }
+    }
+
+    public boolean canExecute(Operation op) {
+        return !op.isStable() && isBiggerTimeStamp(op.getTimeStamp());
+    }
+
     public void doOpList(List<Operation> missingOps,
             List<Integer> clientVectorClock) {
         for (Operation op : missingOps) {
             this.doOp(op, clientVectorClock);
         }
     }
+
+    public List<Operation> getExecutableOpsSorted() {
+        List<Operation> executableOps = new ArrayList<Operation>();
+        for (Operation op : ledger) {
+            if (!op.isStable() && isBiggerTimeStamp(op.getTimeStamp())) {
+                executableOps.add(op);
+            }
+        }
+        Collections.sort(executableOps, new Comparator<Operation>() {
+            @Override
+            public int compare(Operation o1, Operation o2) {
+                int compareResult = Utils.compareVectorClocks(o1.getTimeStamp(), o2.getTimeStamp());
+                if (compareResult != 0) return compareResult;
+                if (o1.getType().equals("OP_CREATE_ACCOUNT") && o2.getType().equals("OP_Create_ACCOUNT")) return 0;
+                else if (o1.getType().equals("OP_CREATE_ACCOUNT")) return -1;
+                else if (o2.getType().equals("OP_CREATE_ACCOUNT")) return 1;
+                else return 0;
+            }
+        });
+        return executableOps;
+    }
+
 /** TODO : remove if else if no conditions added */
     public void updateStableOps() {
         ledger.stream().forEach(operation -> {
@@ -220,7 +252,7 @@ public class ServerState {
         return ledger.stream().anyMatch(operation -> op.getTimeStamp().equals(operation.getTimeStamp()));
     }
 
-    private boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
+    public boolean isBiggerTimeStamp(List<Integer> requestTimeStamp) {
         return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == 1;
     }
 

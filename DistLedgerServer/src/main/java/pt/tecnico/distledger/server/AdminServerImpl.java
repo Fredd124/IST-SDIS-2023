@@ -148,7 +148,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
             }
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
                  = serverCache.distLedgerGetEntry(qualifier).getStub();
-                DistLedgerCommonDefinitions.LedgerState ledgerState 
+            DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
                     ops.stream()
