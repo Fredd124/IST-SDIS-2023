@@ -23,6 +23,7 @@ import pt.tecnico.distledger.utils.DistLedgerServerCache;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
@@ -93,12 +94,26 @@ public class AdminServerImpl extends AdminServiceImplBase {
     public void gossip(GossipRequest request,
             StreamObserver<GossipResponse> responseObserver) {
         List<String> targetQualifiers = Utils.lookupOnDns(dnsStub, "").stream()
-        .map(response -> response.getQualifier())
-        .collect(Collectors.toList());
+            .map(response -> response.getQualifier())
+            .collect(Collectors.toList());
+        List<Operation> ledgerList = state.getLedgerState();
+        if (!targetQualifiers.isEmpty() && !ledgerList.isEmpty()) {
+            List<Integer> lastOperationTimeStamp = ledgerList.get(ledgerList.size() - 1).getTimeStamp();
+            List<Integer> timeStamps = new ArrayList<>();
+            targetQualifiers.stream()
+                .filter(qualifier -> !qualifier.equals(state.getQualifier().toString()))
+                .forEach(qualifier -> 
+                    timeStamps.add(lastOperationTimeStamp.get(Utils.getIndexFromQualifier(qualifier.charAt(0)))));
+            Integer max = Collections.max(timeStamps);
+            if (lastOperationTimeStamp.get(Utils.getIndexFromQualifier(state.getQualifier())) > max) {
+                Integer min = Collections.min(timeStamps);
+                //ledgerList = ledgerList.sublist(min, ledgerList.size());
+            }
+        }
         targetQualifiers.stream()
             .filter(qualifier -> !qualifier.equals(state.getQualifier().toString()))
             .forEach(qualifier -> 
-                propagateToSecondary(state.getLedgerState()
+                propagateToSecondary(ledgerList
                         .stream()
                         .collect(Collectors.toList()), 
                     qualifier));

@@ -20,6 +20,7 @@ public class ServerState {
     private Character qualifier;
     private boolean active;
     private boolean debug;
+    private boolean clientOnHold;
     private Map<String, Integer> accountMap;
     private final String BROKER = "broker";
     private final Integer BROKER_INIT_VALUE = 1000;
@@ -36,6 +37,7 @@ public class ServerState {
         }
         this.active = true;
         this.debug = debug;
+        this.clientOnHold = false;
         this.address = address;
         this.qualifier = qualifier;
         this.accountMap = Collections.synchronizedMap(new HashMap<>());
@@ -81,17 +83,24 @@ public class ServerState {
             System.err.println(message);
     }
 
-    public int balance(String userId, List<Integer> clientVectorClock)
+    public synchronized int balance(String userId, List<Integer> clientVectorClock)
             throws NotActiveException, UserDoesNotExistException, NotUpToDateException {
         if (!this.active) {
             throw new NotActiveException();
         }
+        else if (!isBiggerTimeStampValue(clientVectorClock)) {
+            clientOnHold = true;
+            while (clientOnHold) {
+                try {
+                    wait();
+                    clientOnHold = false;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         else if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
-        }
-        else if (! isBiggerTimeStampValue(clientVectorClock)) {
-            debugPrint("clientVectorClock: " + clientVectorClock + " valueVectorClock: " + valueVectorClock);
-            throw new NotUpToDateException();
         }
         return getBalance(userId);
     }
@@ -168,7 +177,7 @@ public class ServerState {
     }
 
     /* Execute operation and change server state */
-    public void doOp(Operation op) {
+    public synchronized void doOp(Operation op) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
@@ -190,6 +199,9 @@ public class ServerState {
            valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
         }
         debugPrint("valueVectorClock: " + valueVectorClock);
+        if (clientOnHold) {
+            notifyAll();
+        }
     }
 
     /* Receive a request from the frontend */

@@ -6,8 +6,8 @@ import java.util.List;
 public class Operation {
     private String account;
     private boolean stable;
+    private List<Integer> prev;
     private List<Integer> timeStamp;
-    List<Integer> prev;
 
     public Operation(String fromAccount, List<Integer> prev, List<Integer> timeStamp) {
         this.account = fromAccount;
