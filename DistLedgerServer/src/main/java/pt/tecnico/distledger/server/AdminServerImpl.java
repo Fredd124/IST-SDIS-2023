@@ -100,7 +100,6 @@ public class AdminServerImpl extends AdminServiceImplBase {
             .forEach(qualifier -> 
                 propagateToSecondary(state.getLedgerState()
                         .stream()
-                        .filter(op -> op.isStable())
                         .collect(Collectors.toList()), 
                     qualifier));
         responseObserver.onNext(GossipResponse.getDefaultInstance());

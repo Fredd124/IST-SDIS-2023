@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -92,7 +91,7 @@ public class ServerState {
         }
         else if (! isBiggerTimeStampValue(clientVectorClock)) {
             debugPrint("clientVectorClock: " + clientVectorClock + " valueVectorClock: " + valueVectorClock);
-            throw new NotUpToDateException(); // THIS?
+            throw new NotUpToDateException();
         }
         return getBalance(userId);
     }
@@ -142,7 +141,7 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
-    public boolean verifyIfCanExecuteOp(Operation op) { // TODO : add verification to add if op is more recent then timeStamp (prevent double operations)
+    public boolean verifyConstraints(Operation op) {
         debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getPrev()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
@@ -156,6 +155,7 @@ public class ServerState {
         }
     }
 
+    /* Add operation to ledger */
     public void addOp(Operation op, List<Integer> clientVectorClock) {
         ledger.add(op);
         int i = Utils.getIndexFromQualifier(qualifier);
@@ -167,7 +167,8 @@ public class ServerState {
                 this.replicaVectorClock.toString()));
     }
 
-    public void doOp(Operation op, List<Integer> clientVectorClock) { /** TODO: remove vector clock if not used */
+    /* Execute operation and change server state */
+    public void doOp(Operation op) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
             CreateOp createOp = (CreateOp) op;
             accountMap.put(createOp.getAccount(), 0);
@@ -186,15 +187,17 @@ public class ServerState {
                     + transferOp.getDestAccount());
         }
         for (int i = 0; i < replicaVectorClock.size(); i++) {
-           valueVectorClock.set(i, Math.max(valueVectorClock.get(i), replicaVectorClock.get(i))); /* FIXME : maybe here is op.ts */
+           valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
         }
+        debugPrint("valueVectorClock: " + valueVectorClock);
     }
 
+    /* Receive a request from the frontend */
     public void frontendRequest(Operation op, List<Integer> clientVectorClock) {
         addOp(op, clientVectorClock);
         if (canExecute(op)) {
             op.setStable(true);
-            doOp(op, clientVectorClock);
+            doOp(op);
         }
     }
 
@@ -203,6 +206,7 @@ public class ServerState {
         return !op.isStable() && isBiggerTimeStampValue(op.getPrev());
     }
 
+    /* Sorts stable operations in order to have them in the same order in every server */
     public List<Operation> getExecutableOpsSorted() {
         List<Operation> executableOps = new ArrayList<Operation>();
         System.out.println("ledger size: " + ledger.size());
@@ -217,16 +221,14 @@ public class ServerState {
             public int compare(Operation o1, Operation o2) {
                 int compareResult = Utils.compareVectorClocks(o1.getTimeStamp(), o2.getTimeStamp());
                 if (compareResult != 0) return - compareResult;
-                if (o1.getType().equals("OP_CREATE_ACCOUNT") && o2.getType().equals("OP_Create_ACCOUNT")) return 0;
-                else if (o1.getType().equals("OP_CREATE_ACCOUNT")) return -1;
-                else if (o2.getType().equals("OP_CREATE_ACCOUNT")) return 1;
-                else return 0;
+                else return compareEntries(o1.getTimeStamp(), o2.getTimeStamp());
             }
         });
         System.out.println("executableOps size: " + executableOps.size());
         return executableOps;
     }
 
+    /* Update stable operations if possible */
     public void updateStableOps() {
         List<Operation> executableOps = getExecutableOpsSorted();
         debugPrint("Sorted ops: ");
@@ -234,18 +236,18 @@ public class ServerState {
             debugPrint(String.format("Operation %s with clock %s", op.getType(), op.getPrev()));
         }
         for (Operation op : executableOps) {
-            if (isBiggerTimeStampValue(op.getPrev()) && verifyIfCanExecuteOp(op)) {
-                op.setStable(true);
-                doOp(op, op.getTimeStamp());
+            if (isBiggerTimeStampValue(op.getPrev())) {
+                if (verifyConstraints(op)) {
+                    op.setStable(true);
+                    doOp(op);
+                }
+                else {
+                    for (int i = 0; i < replicaVectorClock.size(); i++) {
+                        valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
+                    }
+                }
             }
         }
-    }
-
-    public boolean estimatedGossip(Operation op, String qualifierString) {
-        Character qualifierCharacter = qualifierString.charAt(0);
-        int index = Utils.getIndexFromQualifier(qualifierCharacter);
-        debugPrint(String.format("Comparing %s with %s", op.getPrev().get(index), replicaVectorClock.get(index)));
-        return op.getPrev().get(index) >= replicaVectorClock.get(index);
     }
 
     public boolean isRepeatedOp(Operation op) {
@@ -253,6 +255,7 @@ public class ServerState {
         return isBiggerTimeStampReplica(op.getTimeStamp());
     }
 
+    /* TODO : change to is bigger or equal? */
     public boolean isBiggerTimeStampValue(List<Integer> requestTimeStamp) {
         return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == 1;
     }
@@ -261,8 +264,19 @@ public class ServerState {
         return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == 1;
     }
 
-    private boolean isSmallerTimeStamp(List<Integer> requestTimeStamp) {
-        return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == -1;
+    private int compareEntries(List<Integer> requestTimeStamp, List<Integer> opTimeStamp) {
+        for (int i = 0; i < requestTimeStamp.size(); i++) {
+            if (requestTimeStamp.get(i) == opTimeStamp.get(i)) {
+                continue;
+            }
+            else if (requestTimeStamp.get(i) > opTimeStamp.get(i)) {
+                return 1;
+            }
+            else {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     public void updateReplicaClocks(List<Integer> replicaVectorClock) {
