@@ -73,7 +73,9 @@ public class UserService {
             debugPrint(String.format("Sent vector clock %s from server.", vectorClock.toString()));
             response = stub.createAccount(request);
             System.out.println("OK");
-            vectorClock = response.getTSList();
+            for (int i = 0; i < vectorClock.size(); i++) {
+                vectorClock.set(i, Math.max(vectorClock.get(i), response.getTSList().get(i)));
+            }
             debugPrint(String.format("Received vector clock %s from server.", vectorClock.toString()));
         } catch (StatusRuntimeException e) {
             debugPrint(
@@ -124,7 +126,9 @@ public class UserService {
             debugPrint(String.format("Sent vector clock %s from server.", vectorClock.toString()));
             response = stub.transferTo(request);
             System.out.println("OK");   
-            vectorClock = response.getTSList();
+            for (int i = 0; i < vectorClock.size(); i++) {
+                vectorClock.set(i, Math.max(vectorClock.get(i), response.getTSList().get(i)));
+            }            
             debugPrint(String.format("Received vector clock %s from server.", vectorClock.toString()));
         } catch (StatusRuntimeException e) {
             debugPrint(

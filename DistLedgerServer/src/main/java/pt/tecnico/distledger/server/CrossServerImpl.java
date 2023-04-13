@@ -13,7 +13,6 @@ import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.UNAVAILABLE;
 
 import java.util.List;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
@@ -31,11 +30,11 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
             responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
             return;
         }
+        this.state.changeTimeTableMapEntry(request.getQualifier(), request.getReplicaTSList());
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
         .collect(Collectors.toList());
         ops.forEach(op -> {
-            List<Integer> clientVectorClock = new ArrayList<>(op.getPrev());
             if (! this.state.isRepeatedOp(op)) {
                 this.state.addOp(op);
                 this.state.mergeReplicaClock(op.getTimeStamp());

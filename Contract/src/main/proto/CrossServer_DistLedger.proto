@@ -8,6 +8,7 @@ import "DistLedgerCommonDefinitions.proto";
 message PropagateStateRequest {
   LedgerState state = 1;
   repeated int32 replicaTS = 2;
+  string qualifier = 3;
 }
 
 message PropagateStateResponse {

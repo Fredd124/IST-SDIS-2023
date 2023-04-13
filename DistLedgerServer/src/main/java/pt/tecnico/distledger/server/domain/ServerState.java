@@ -5,6 +5,7 @@ import pt.tecnico.distledger.utils.Utils;
 import pt.tecnico.distledger.server.domain.exceptions.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,9 +44,7 @@ public class ServerState {
         this.qualifier = qualifier;
         this.accountMap = Collections.synchronizedMap(new HashMap<>());
         this.timetableMap = new HashMap<String, List<Integer>>(); // Improve initialization
-        timetableMap.put("A", replicaVectorClock);
-        timetableMap.put("B", replicaVectorClock);
-        timetableMap.put("C", replicaVectorClock);
+        initializeTimeTableMap(replicaVectorClock);
         createBroker();
     }
 
@@ -69,8 +68,25 @@ public class ServerState {
         return this.replicaVectorClock;
     }
 
+    public void initializeTimeTableMap(List<Integer> vector) {
+        Integer[] array = new Integer[3];
+        Arrays.fill(array, 0);
+        List<Integer> zeroList = Arrays.asList(array);
+        timetableMap.put("A", zeroList);
+        timetableMap.put("B", zeroList);
+        timetableMap.put("C", zeroList);
+    }
+
     public List<Integer> getValueVectorClock() {
         return this.valueVectorClock;
+    }
+
+    public Map<String, List<Integer>> getTimeTableMap() {
+        return this.timetableMap;
+    }
+    
+    public void changeTimeTableMapEntry(String qualifier, List<Integer> newGossipTimeStamp) {
+        timetableMap.replace(qualifier, newGossipTimeStamp);
     }
 
     public synchronized void activate() throws AlreadyActiveException {
@@ -108,7 +124,7 @@ public class ServerState {
                 }
             }
         }
-        else if (!this.containsUser(userId)) {
+        if (!this.containsUser(userId)) {
             throw new UserDoesNotExistException();
         }
         return getBalance(userId);

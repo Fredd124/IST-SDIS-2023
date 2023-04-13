@@ -91,7 +91,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
 
     @Override
     public void gossip(GossipRequest request,
-            StreamObserver<GossipResponse> responseObserver) {
+    StreamObserver<GossipResponse> responseObserver) {
         List<String> targetQualifiers = Utils.lookupOnDns(dnsStub, "").stream()
             .map(response -> response.getQualifier())
             .collect(Collectors.toList());
@@ -100,7 +100,8 @@ public class AdminServerImpl extends AdminServiceImplBase {
             .forEach(qualifier -> 
                 propagateToSecondary(state.getLedgerState()
                         .stream()
-                        /* .filter(op -> this.state.isBiggerTimeStampReplica(op.getTimeStamp())) */
+                        .filter(op -> 
+                            (Utils.compareVectorClocks(op.getTimeStamp(), state.getTimeTableMap().get(qualifier)) != 1))
                         .collect(Collectors.toList()), 
                     qualifier));
         responseObserver.onNext(GossipResponse.getDefaultInstance());
@@ -155,7 +156,8 @@ public class AdminServerImpl extends AdminServiceImplBase {
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
-                    .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock()).build();
+                    .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock())
+                    .setQualifier(state.getQualifier().toString()).build();
                 state.debugPrint("Sending propagate request");
                 stub.propagateState(propagateRequest);
                 state.debugPrint(
