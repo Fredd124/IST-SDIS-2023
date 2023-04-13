@@ -160,7 +160,6 @@ public class ServerState {
     }
 
     public boolean verifyConstraints(Operation op) {
-        debugPrint(String.format("Received operation %s with clock %s", op.getType(), op.getPrev()));
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
                 return ! this.containsUser(op.getAccount());
@@ -174,15 +173,24 @@ public class ServerState {
     }
 
     /* Add operation to ledger */
-    public void addOp(Operation op, List<Integer> clientVectorClock) {
-        ledger.add(op);
+    public void addOp(Operation op) {
+        ledger.add(op);   
+    }
+
+    /* Increment this replica's replicaTS entry and change client vector clock */
+    public void incrementReplicaEntry(Operation op, List<Integer> clientVectorClock) {
         int i = Utils.getIndexFromQualifier(qualifier);
         replicaVectorClock.set(i, replicaVectorClock.get(i) + 1);
-        debugPrint("test " + valueVectorClock.toString());
         clientVectorClock.set(i, replicaVectorClock.get(i));
         if(op.getTimeStamp() == null) op.setTimeStamp(clientVectorClock);
         debugPrint(String.format("New clock for server %s : %s", this.qualifier,
-                this.replicaVectorClock.toString()));
+        this.replicaVectorClock.toString()));
+    }
+
+    public void mergeReplicaClock(List<Integer> operationVectorClock) {
+        for (int i = 0; i < replicaVectorClock.size(); i++) {
+            replicaVectorClock.set(i, Math.max(replicaVectorClock.get(i), operationVectorClock.get(i)));
+        }
     }
 
     /* Execute operation and change server state */
@@ -207,7 +215,7 @@ public class ServerState {
         for (int i = 0; i < replicaVectorClock.size(); i++) {
            valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
         }
-        debugPrint("valueVectorClock: " + valueVectorClock);
+        debugPrint("ValueVectorClock: " + valueVectorClock);
         if (clientOnHold) {
             notifyAll();
         }
@@ -215,7 +223,8 @@ public class ServerState {
 
     /* Receive a request from the frontend */
     public void frontendRequest(Operation op, List<Integer> clientVectorClock) {
-        addOp(op, clientVectorClock);
+        addOp(op);
+        incrementReplicaEntry(op, clientVectorClock);
         if (canExecute(op)) {
             op.setStable(true);
             doOp(op);
@@ -223,20 +232,17 @@ public class ServerState {
     }
 
     public boolean canExecute(Operation op) {
-        debugPrint(op.getPrev() + " " + valueVectorClock);
         return !op.isStable() && isBiggerTimeStampValue(op.getPrev());
     }
 
     /* Sorts stable operations in order to have them in the same order in every server */
     public List<Operation> getExecutableOpsSorted() {
         List<Operation> executableOps = new ArrayList<Operation>();
-        System.out.println("ledger size: " + ledger.size());
         for (Operation op : ledger) {
             if (!op.isStable()) {
                 executableOps.add(op);
             }
         }
-        System.out.println("executableOps size: " + executableOps.size());
         Collections.sort(executableOps, new Comparator<Operation>() {
             @Override
             public int compare(Operation o1, Operation o2) {
@@ -245,7 +251,6 @@ public class ServerState {
                 else return compareEntries(o1.getTimeStamp(), o2.getTimeStamp());
             }
         });
-        System.out.println("executableOps size: " + executableOps.size());
         return executableOps;
     }
 
@@ -272,7 +277,7 @@ public class ServerState {
     }
 
     public boolean isRepeatedOp(Operation op) {
-        debugPrint(String.format("Comparing r.ts %s with replicaTS %s", op.getTimeStamp(), replicaVectorClock));
+        debugPrint(String.format("Comparing r.ts %s with replica clock %s", op.getTimeStamp(), replicaVectorClock));
         return isBiggerTimeStampReplica(op.getTimeStamp());
     }
 
@@ -281,7 +286,7 @@ public class ServerState {
         return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == 1;
     }
 
-    boolean isBiggerTimeStampReplica(List<Integer> requestTimeStamp) {
+    public boolean isBiggerTimeStampReplica(List<Integer> requestTimeStamp) {
         return Utils.compareVectorClocks(requestTimeStamp, replicaVectorClock) == 1;
     }
 
@@ -306,7 +311,7 @@ public class ServerState {
                 this.replicaVectorClock.set(i, replicaVectorClock.get(i));
             }
         }
-        debugPrint(String.format("New replica clock for server %s : %s", qualifier,
+        debugPrint(String.format("Replica clock for server %s : %s", qualifier,
                 this.replicaVectorClock.toString()));
     }
 }

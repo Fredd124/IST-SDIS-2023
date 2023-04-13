@@ -100,6 +100,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
             .forEach(qualifier -> 
                 propagateToSecondary(state.getLedgerState()
                         .stream()
+                        /* .filter(op -> this.state.isBiggerTimeStampReplica(op.getTimeStamp())) */
                         .collect(Collectors.toList()), 
                     qualifier));
         responseObserver.onNext(GossipResponse.getDefaultInstance());
@@ -145,14 +146,12 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 serverCache.addEntry(qualifier, address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
-            List<Integer> replicaTS = this.state.getReplicaVectorClock();
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
                  = serverCache.distLedgerGetEntry(qualifier).getStub();
             DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
                     ops.stream()
-                    .filter(op -> !Utils.isSmallerVectorClock(op.getTimeStamp(), replicaTS))
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()

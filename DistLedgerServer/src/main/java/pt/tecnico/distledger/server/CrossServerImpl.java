@@ -36,7 +36,10 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         .collect(Collectors.toList());
         ops.forEach(op -> {
             List<Integer> clientVectorClock = new ArrayList<>(op.getPrev());
-            if (! this.state.isRepeatedOp(op)) this.state.addOp(op, clientVectorClock);
+            if (! this.state.isRepeatedOp(op)) {
+                this.state.addOp(op);
+                this.state.mergeReplicaClock(op.getTimeStamp());
+            }
         });
         this.state.updateReplicaClocks(request.getReplicaTSList());
         this.state.debugPrint(
