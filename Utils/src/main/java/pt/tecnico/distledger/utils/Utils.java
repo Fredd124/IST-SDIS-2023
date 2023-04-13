@@ -37,4 +37,15 @@ public class Utils {
         return 0; //  no one is bigger
     } 
     
+    public static boolean isSmallerVectorClock(List<Integer> a, List<Integer> b) {
+        boolean equal = true;
+        int i;
+        for (i = 0; i < a.size(); i++) {
+            if (a.get(i) != b.get(i)) {
+                equal = false;
+            }
+        }
+        return equal || (compareVectorClocks(a, b) != 1);
+    }
+
 }

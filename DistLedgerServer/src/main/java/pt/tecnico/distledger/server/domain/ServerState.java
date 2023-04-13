@@ -22,6 +22,7 @@ public class ServerState {
     private boolean debug;
     private boolean clientOnHold;
     private Map<String, Integer> accountMap;
+    private Map<String, List<Integer>> timetableMap;
     private final String BROKER = "broker";
     private final Integer BROKER_INIT_VALUE = 1000;
 
@@ -41,6 +42,10 @@ public class ServerState {
         this.address = address;
         this.qualifier = qualifier;
         this.accountMap = Collections.synchronizedMap(new HashMap<>());
+        this.timetableMap = new HashMap<String, List<Integer>>(); // Improve initialization
+        timetableMap.put("A", replicaVectorClock);
+        timetableMap.put("B", replicaVectorClock);
+        timetableMap.put("C", replicaVectorClock);
         createBroker();
     }
 
@@ -62,6 +67,10 @@ public class ServerState {
 
     public List<Integer> getReplicaVectorClock() {
         return this.replicaVectorClock;
+    }
+
+    public List<Integer> getValueVectorClock() {
+        return this.valueVectorClock;
     }
 
     public synchronized void activate() throws AlreadyActiveException {

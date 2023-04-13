@@ -23,7 +23,6 @@ import pt.tecnico.distledger.utils.DistLedgerServerCache;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
 import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
@@ -96,24 +95,10 @@ public class AdminServerImpl extends AdminServiceImplBase {
         List<String> targetQualifiers = Utils.lookupOnDns(dnsStub, "").stream()
             .map(response -> response.getQualifier())
             .collect(Collectors.toList());
-        List<Operation> ledgerList = state.getLedgerState();
-        if (!targetQualifiers.isEmpty() && !ledgerList.isEmpty()) {
-            List<Integer> lastOperationTimeStamp = ledgerList.get(ledgerList.size() - 1).getTimeStamp();
-            List<Integer> timeStamps = new ArrayList<>();
-            targetQualifiers.stream()
-                .filter(qualifier -> !qualifier.equals(state.getQualifier().toString()))
-                .forEach(qualifier -> 
-                    timeStamps.add(lastOperationTimeStamp.get(Utils.getIndexFromQualifier(qualifier.charAt(0)))));
-            Integer max = Collections.max(timeStamps);
-            if (lastOperationTimeStamp.get(Utils.getIndexFromQualifier(state.getQualifier())) > max) {
-                Integer min = Collections.min(timeStamps);
-                //ledgerList = ledgerList.sublist(min, ledgerList.size());
-            }
-        }
         targetQualifiers.stream()
             .filter(qualifier -> !qualifier.equals(state.getQualifier().toString()))
             .forEach(qualifier -> 
-                propagateToSecondary(ledgerList
+                propagateToSecondary(state.getLedgerState()
                         .stream()
                         .collect(Collectors.toList()), 
                     qualifier));
@@ -160,12 +145,14 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 serverCache.addEntry(qualifier, address);
                 state.debugPrint(String.format("Added B qualifier to server cache."));
             }
+            List<Integer> replicaTS = this.state.getReplicaVectorClock();
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
                  = serverCache.distLedgerGetEntry(qualifier).getStub();
             DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
                     ops.stream()
+                    .filter(op -> !Utils.isSmallerVectorClock(op.getTimeStamp(), replicaTS))
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
