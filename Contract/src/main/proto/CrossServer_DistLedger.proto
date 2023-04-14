@@ -14,13 +14,7 @@ message PropagateStateRequest {
 message PropagateStateResponse {
 }
 
-message ProvideStateRequest {}
-
-message ProvideStateResponse {
-  LedgerState state = 1;
-}
 
 service DistLedgerCrossServerService {
   rpc propagateState(PropagateStateRequest) returns (PropagateStateResponse);
-  rpc provideState(ProvideStateRequest) returns (ProvideStateResponse);
 }

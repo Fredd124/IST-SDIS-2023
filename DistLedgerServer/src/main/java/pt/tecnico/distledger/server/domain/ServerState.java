@@ -43,7 +43,7 @@ public class ServerState {
         this.qualifier = qualifier;
         this.accountMap = Collections.synchronizedMap(new HashMap<>());
         this.timeTableMap = new HashMap<String, List<Integer>>(); 
-        initializeTimeTableMap(replicaVectorClock);
+        initializetimeTableMap(replicaVectorClock);
         createBroker();
     }
 
@@ -210,7 +210,7 @@ public class ServerState {
         clientVectorClock.set(i, replicaVectorClock.get(i));
         if (op.getTimeStamp() == null)
             op.setTimeStamp(clientVectorClock);
-        debugPrint(String.format("New clock for server %s : %s", this.qualifier,
+        debugPrint(String.format("New replicaTS for server %s : %s", this.qualifier,
                 this.replicaVectorClock.toString()));
     }
 
@@ -245,7 +245,7 @@ public class ServerState {
             valueVectorClock.set(i, Math.max(valueVectorClock.get(i),
                     op.getTimeStamp().get(i)));
         }
-        debugPrint("ValueVectorClock: " + valueVectorClock);
+        debugPrint("ValueTS: " + valueVectorClock);
         if (clientOnHold) {
             notifyAll();
         }

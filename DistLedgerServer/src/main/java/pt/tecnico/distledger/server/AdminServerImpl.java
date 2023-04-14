@@ -157,7 +157,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
                     ops.stream()
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
-                PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
+                PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setQualifier(this.state.getQualifier().toString())
                     .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock()).build();
                 state.debugPrint("Sending propagate request");
                 stub.propagateState(propagateRequest);
