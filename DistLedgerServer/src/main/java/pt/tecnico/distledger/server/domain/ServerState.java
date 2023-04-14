@@ -170,6 +170,7 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
+    /* Used to check if executable operation can be applied to value or not */
     public void verifyConstraints(Operation op) throws UserDoesNotExistException, 
         InvalidUserBalanceException, SourceUserDoesNotExistException,
         DestinationUserDoesNotExistException {
@@ -290,6 +291,7 @@ public class ServerState {
         return executableOps;
     }
 
+    /* Used to compare timeStamps without a > or < relationship */
     private int compareEntries(List<Integer> requestTimeStamp,
         List<Integer> opTimeStamp) {
         for (int i = 0; i < requestTimeStamp.size(); i++) {
@@ -309,11 +311,6 @@ public class ServerState {
     /* Update stable operations if possible */
     public void updateStableOps() {
         List<Operation> executableOps = getExecutableOpsSorted();
-        debugPrint("Sorted ops: ");
-        for (Operation op : executableOps) {
-            debugPrint(String.format("Operation %s with clock %s", op.getType(),
-                    op.getPrev()));
-        }
         for (Operation op : executableOps) {
             if (isNotBiggerThanValueTS(op.getPrev())) {
                 op.setStable(true);
@@ -322,16 +319,16 @@ public class ServerState {
                     doOp(op);
                 } catch (ServerStateException e) {
                     debugPrint(String.format("Threw exception : %s .", e.getMessage()));
-                }
-                for (int i = 0; i < replicaVectorClock.size(); i++) {
-                    valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
+                    for (int i = 0; i < replicaVectorClock.size(); i++) {
+                        valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
+                    }
                 }
             }
         }
     }
 
     public boolean isRepeatedOp(Operation op) {
-        debugPrint(String.format("Comparing r.ts %s with replica clock %s",
+        debugPrint(String.format("Comparing r.ts %s with replicaTS %s",
                 op.getTimeStamp(), replicaVectorClock));
         return isNotBiggerThanReplicaTS(op.getTimeStamp());
     }
@@ -347,13 +344,14 @@ public class ServerState {
                 replicaVectorClock) == 1;
     }
 
+    /* Merge this replicaTS for received replicaTS */
     public void updateReplicaClocks(List<Integer> replicaVectorClock) {
         for (int i = 0; i < replicaVectorClock.size(); i++) {
             if (replicaVectorClock.get(i) > this.replicaVectorClock.get(i)) {
                 this.replicaVectorClock.set(i, replicaVectorClock.get(i));
             }
         }
-        debugPrint(String.format("Replica clock for server %s : %s", qualifier,
+        debugPrint(String.format("ReplicaTS of server %s : %s", qualifier,
                 this.replicaVectorClock.toString()));
     }
 

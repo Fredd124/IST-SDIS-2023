@@ -7,7 +7,7 @@ import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
 public class Converter {
-    public static DistLedgerCommonDefinitions.Operation convertToGrpc(Operation operation) {
+    public static DistLedgerCommonDefinitions.Operation convertToGrpc(Operation operation, boolean isStable) {
         String type = operation.getType();
         switch (type){
             case ("OP_TRANSFER_TO"):
@@ -16,6 +16,7 @@ public class Converter {
                         .setUserId(operation.getAccount())
                         .setDestUserId(((TransferOp) operation).getDestAccount())
                         .setAmount(((TransferOp) operation).getAmount())
+                        .setIsStable(isStable)
                         .addAllPrevTS(operation.getPrev())
                         .addAllTS(operation.getTimeStamp())
                         .build();
@@ -23,6 +24,7 @@ public class Converter {
                 return DistLedgerCommonDefinitions.Operation.newBuilder()
                         .setType(DistLedgerCommonDefinitions.OperationType.OP_CREATE_ACCOUNT)
                         .setUserId(operation.getAccount())
+                        .setIsStable(isStable)
                         .addAllPrevTS(operation.getPrev())
                         .addAllTS(operation.getTimeStamp())
                         .build();

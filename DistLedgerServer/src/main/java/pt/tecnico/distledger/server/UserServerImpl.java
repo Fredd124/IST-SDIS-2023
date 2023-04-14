@@ -112,7 +112,7 @@ public class UserServerImpl extends UserServiceImplBase {
         try {
             done = state.transfer(fromUserId, toUserId, value, request.getPrevTSList());
             state.debugPrint(String.format(
-                    "Transfered %d from account of user %s to account of user %s .",
+                    "Created operation to transfer %d from account of user %s to account of user %s .",
                     value, fromUserId, toUserId));
             state.debugPrint("Adding operation to ledger.");
             List<Integer> copyClientVectorClock = new ArrayList<Integer>();

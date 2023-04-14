@@ -118,7 +118,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
         ArrayList<DistLedgerCommonDefinitions.Operation> ledgerState = new ArrayList<DistLedgerCommonDefinitions.Operation>();
         for (Operation op : state.getLedgerState()) {
             DistLedgerCommonDefinitions.Operation operation = Converter
-                    .convertToGrpc(op);
+                    .convertToGrpc(op, op.isStable());
             ledgerState.add(operation);
         }
         DistLedgerCommonDefinitions.LedgerState ledgerStateGrpc = DistLedgerCommonDefinitions.LedgerState
@@ -155,7 +155,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
                     ops.stream()
-                    .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
+                    .map(operation -> Converter.convertToGrpc(operation, false)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setQualifier(this.state.getQualifier().toString())
                     .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock()).build();
