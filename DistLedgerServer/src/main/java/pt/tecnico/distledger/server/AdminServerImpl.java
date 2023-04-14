@@ -92,8 +92,10 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void gossip(GossipRequest request,
     StreamObserver<GossipResponse> responseObserver) {
-        List<String> targetQualifiers = Utils.lookupOnDns(dnsStub, "").stream()
-            .map(response -> response.getQualifier())
+        List<QualifierAdressPair> response = Utils.lookupOnDns(dnsStub, "");
+        response.forEach(pair -> serverCache.addEntry(pair.getQualifier(), pair.getAddress()));
+        List<String> targetQualifiers = response.stream()
+            .map(pair -> pair.getQualifier())
             .collect(Collectors.toList());
         targetQualifiers.stream()
             .filter(qualifier -> !qualifier.equals(state.getQualifier().toString()))
@@ -145,7 +147,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 String address = result.get(0).getAddress();
                 state.debugPrint("Got server address: " + address);
                 serverCache.addEntry(qualifier, address);
-                state.debugPrint(String.format("Added B qualifier to server cache."));
+                state.debugPrint(String.format("Added %s qualifier to server cache.", qualifier));
             }
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
                  = serverCache.distLedgerGetEntry(qualifier).getStub();
@@ -156,8 +158,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
                     .map(operation -> Converter.convertToGrpc(operation)).collect(Collectors.toList())
                 ).build();
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder()
-                    .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock())
-                    .setQualifier(state.getQualifier().toString()).build();
+                    .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock()).build();
                 state.debugPrint("Sending propagate request");
                 stub.propagateState(propagateRequest);
                 state.debugPrint(
