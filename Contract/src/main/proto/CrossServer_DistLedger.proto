@@ -12,6 +12,7 @@ message PropagateStateRequest {
 }
 
 message PropagateStateResponse {
+  repeated int32 replicaTS = 1;
 }
 
 

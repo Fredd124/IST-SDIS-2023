@@ -18,6 +18,7 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc.AdminServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
 import pt.tecnico.distledger.utils.Utils;
 import pt.tecnico.distledger.utils.DistLedgerServerCache;
 
@@ -166,7 +167,8 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 PropagateStateRequest propagateRequest = PropagateStateRequest.newBuilder().setQualifier(this.state.getQualifier().toString())
                     .setState(ledgerState).addAllReplicaTS(this.state.getReplicaVectorClock()).build();
                 state.debugPrint("Sending propagate request");
-                stub.propagateState(propagateRequest);
+                PropagateStateResponse response = stub.propagateState(propagateRequest);
+                this.state.changetimeTableMapEntry(qualifier, response.getReplicaTSList());
                 state.debugPrint(
                     String.format("Propagated successfully %d operations.", ops.size())
                 );
