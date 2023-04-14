@@ -167,20 +167,29 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
-    public void verifyConstraints(Operation op) throws CouldNotExecuteOperation{
+    public void verifyConstraints(Operation op) throws UserDoesNotExistException, 
+        InvalidUserBalanceException, SourceUserDoesNotExistException,
+        DestinationUserDoesNotExistException {
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
-                if(!this.containsUser(op.getAccount())) {
-                    throw new CouldNotExecuteOperation();
+                if(this.containsUser(op.getAccount())) {
+                    throw new UserDoesNotExistException();
                 }
+                break;
             case("OP_TRANSFER_TO"):
                 TransferOp transferOp = (TransferOp) op;
-                if(this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount())
-                    && this.getBalance(transferOp.getAccount()) >= transferOp.getAmount()) {
-                    throw new CouldNotExecuteOperation();
+                if (!this.containsUser(transferOp.getAccount())) {
+                    throw new SourceUserDoesNotExistException();
                 }
+                else if (!this.containsUser(transferOp.getDestAccount())) {
+                    throw new DestinationUserDoesNotExistException();
+                }
+                else if (this.getBalance(transferOp.getAccount()) < transferOp.getAmount()) {
+                    throw new InvalidUserBalanceException();
+                }
+                break;
             default:
-                throw new CouldNotExecuteOperation();
+                break;
         }
     }
 
@@ -280,7 +289,7 @@ public class ServerState {
                     verifyConstraints(op);
                     doOp(op);
                 } catch (ServerStateException e) {
-                    System.out.println(e.getMessage());
+                    debugPrint(String.format("Threw exception : %s .", e.getMessage()));
                 }
                 for (int i = 0; i < replicaVectorClock.size(); i++) {
                     valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
