@@ -44,7 +44,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         this.state.debugPrint(
             String.format("Merging replica clock for received clock %s", request.getReplicaTSList())
         );
-        this.state.updateStableOps();
+        this.state.updateStableOps(); /* Execute stable ops */
         PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();

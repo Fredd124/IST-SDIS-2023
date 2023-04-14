@@ -92,6 +92,11 @@ public class AdminServerImpl extends AdminServiceImplBase {
     @Override
     public void gossip(GossipRequest request,
     StreamObserver<GossipResponse> responseObserver) {
+        if (! state.isActive()) {
+            state.debugPrint("Received gossip request from admin but server is not active.");
+            responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
+            return;
+        }
         List<QualifierAdressPair> response = Utils.lookupOnDns(dnsStub, "");
         response.forEach(pair -> serverCache.addEntry(pair.getQualifier(), pair.getAddress()));
         List<String> targetQualifiers = response.stream()
@@ -136,7 +141,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
             return;
         }
         try {
-            if (! serverCache.distLedgerHasEntry(qualifier)) {
+            if (! serverCache.distLedgerHasEntry(qualifier)) { /* lookup qualifier and add it to cache*/
                 state.debugPrint(String.format("Sending lookup request to service %s", SERVICE_NAME));
                 List<QualifierAdressPair> result =  Utils.lookupOnDns(dnsStub, qualifier);
                 if (result.size() == 0) {
@@ -150,7 +155,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
                 state.debugPrint(String.format("Added %s qualifier to server cache.", qualifier));
             }
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub
-                 = serverCache.distLedgerGetEntry(qualifier).getStub();
+                = serverCache.distLedgerGetEntry(qualifier).getStub();
             DistLedgerCommonDefinitions.LedgerState ledgerState 
                 = DistLedgerCommonDefinitions.LedgerState.newBuilder()
                 .addAllLedger(
