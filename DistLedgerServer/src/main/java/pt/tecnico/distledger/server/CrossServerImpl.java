@@ -33,7 +33,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         this.state.changetimeTableMapEntry(request.getQualifier(), request.getReplicaTSList());
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
-        .collect(Collectors.toList());
+            .collect(Collectors.toList());
         ops.forEach(op -> {
             if (! this.state.isRepeatedOp(op)) {
                 this.state.addOpToLedger(op);

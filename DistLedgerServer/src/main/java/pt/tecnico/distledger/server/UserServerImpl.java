@@ -46,19 +46,25 @@ public class UserServerImpl extends UserServiceImplBase {
         }
         catch (NotActiveException e) {
             state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage())
                     .asRuntimeException());
         }
         catch (NotUpToDateException e) {
-                state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+            state.debugPrint(
+                String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(CANCELLED.withDescription(e.getMessage())
                     .asRuntimeException());
         }
+        catch (InterruptedException e) {
+            state.debugPrint(
+                String.format("Threw exception : %s .", e.getMessage()));
+            responseObserver.onError(CANCELLED.withDescription(e.getMessage())
+                .asRuntimeException());
+        }
         catch (ServerStateException e) {
             state.debugPrint(
-                    String.format("Threw exception : %s .", e.getMessage()));
+                String.format("Threw exception : %s .", e.getMessage()));
             responseObserver.onError(INVALID_ARGUMENT
                     .withDescription(e.getMessage()).asRuntimeException());
         }
