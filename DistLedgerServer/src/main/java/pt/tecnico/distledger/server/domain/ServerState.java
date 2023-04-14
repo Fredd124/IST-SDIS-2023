@@ -122,7 +122,8 @@ public class ServerState {
 
     public synchronized int balance(String userId,
             List<Integer> clientVectorClock) throws NotActiveException,
-            UserDoesNotExistException, NotUpToDateException {
+            UserDoesNotExistException, NotUpToDateException,
+            InterruptedException {
         if (!this.active) {
             throw new NotActiveException();
         }
@@ -134,7 +135,7 @@ public class ServerState {
                     clientOnHold = false;
                 }
                 catch (InterruptedException e) {
-                    e.printStackTrace();
+                    throw new InterruptedException();
                 }
             }
         }

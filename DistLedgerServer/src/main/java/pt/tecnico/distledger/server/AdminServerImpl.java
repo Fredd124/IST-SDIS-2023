@@ -136,13 +136,14 @@ public class AdminServerImpl extends AdminServiceImplBase {
             return;
         }
         try {
-            if (! serverCache.distLedgerHasEntry(qualifier)) {
+            if (!serverCache.distLedgerHasEntry(qualifier)) {
                 state.debugPrint(String.format("Sending lookup request to service %s", SERVICE_NAME));
                 List<QualifierAdressPair> result =  Utils.lookupOnDns(dnsStub, qualifier);
                 if (result.size() == 0) {
                     state.debugPrint(
                         String.format("No server found for qualifier %s.", qualifier)
                     );
+                    return;
                 }
                 String address = result.get(0).getAddress();
                 state.debugPrint("Got server address: " + address);
