@@ -17,6 +17,7 @@ message Operation {
   int32 amount = 4;  //only for transferTo operations
   repeated int32 prevTS = 5;
   repeated int32 TS = 6;
+  bool isStable = 7;
 }
 
 message LedgerState {
