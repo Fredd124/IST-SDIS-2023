@@ -23,7 +23,7 @@ public class ServerState {
     private boolean debug;
     private boolean clientOnHold;
     private Map<String, Integer> accountMap;
-    private Map<String, List<Integer>> timetableMap;
+    private Map<String, List<Integer>> timeTableMap;
     private final String BROKER = "broker";
     private final Integer BROKER_INIT_VALUE = 1000;
 
@@ -43,7 +43,7 @@ public class ServerState {
         this.address = address;
         this.qualifier = qualifier;
         this.accountMap = Collections.synchronizedMap(new HashMap<>());
-        this.timetableMap = new HashMap<String, List<Integer>>(); // Improve initialization
+        this.timeTableMap = new HashMap<String, List<Integer>>(); 
         initializeTimeTableMap(replicaVectorClock);
         createBroker();
     }
@@ -63,30 +63,47 @@ public class ServerState {
     public Character getQualifier() {
         return this.qualifier;
     }
-
+    
     public List<Integer> getReplicaVectorClock() {
         return this.replicaVectorClock;
     }
-
+    
     public void initializeTimeTableMap(List<Integer> vector) {
         Integer[] array = new Integer[3];
         Arrays.fill(array, 0);
         List<Integer> zeroList = Arrays.asList(array);
-        timetableMap.put("A", zeroList);
-        timetableMap.put("B", zeroList);
-        timetableMap.put("C", zeroList);
-    }
-
-    public List<Integer> getValueVectorClock() {
-        return this.valueVectorClock;
+        timeTableMap.put("A", zeroList);
+        timeTableMap.put("B", zeroList);
+        timeTableMap.put("C", zeroList);
     }
 
     public Map<String, List<Integer>> getTimeTableMap() {
-        return this.timetableMap;
+        return this.timeTableMap;
     }
     
+    
+    public synchronized List<Operation> getLedgerState() {
+        return this.ledger;
+    }
+    
+    public synchronized void setLedgerState(List<Operation> ops) {
+        this.ledger = ops;
+    }
+
+    public int getBalance(String userId) {
+        return accountMap.get(userId);
+    }
+    
+    public boolean containsUser(String userId) {
+        return accountMap.containsKey(userId);
+    }
+
+    public void createBroker() {
+        accountMap.put(BROKER, BROKER_INIT_VALUE);
+    }
+
     public void changeTimeTableMapEntry(String qualifier, List<Integer> newGossipTimeStamp) {
-        timetableMap.replace(qualifier, newGossipTimeStamp);
+        timeTableMap.replace(qualifier, newGossipTimeStamp);
     }
 
     public synchronized void activate() throws AlreadyActiveException {
@@ -95,17 +112,12 @@ public class ServerState {
         }
         setActive(true);
     }
-
+    
     public synchronized void deactivate() throws NotActiveException {
         if (!this.active) {
             throw new NotActiveException();
         }
         setActive(false);
-    }
-
-    public void debugPrint(String message) {
-        if (debug)
-            System.err.println(message);
     }
 
     public synchronized int balance(String userId, List<Integer> clientVectorClock)
@@ -128,26 +140,6 @@ public class ServerState {
             throw new UserDoesNotExistException();
         }
         return getBalance(userId);
-    }
-
-    public int getBalance(String userId) {
-        return accountMap.get(userId);
-    }
-
-    public synchronized List<Operation> getLedgerState() {
-        return this.ledger;
-    }
-
-    public synchronized void setLedgerState(List<Operation> ops) {
-        this.ledger = ops;
-    }
-
-    public boolean containsUser(String userId) {
-        return accountMap.containsKey(userId);
-    }
-
-    public void createBroker() {
-        accountMap.put(BROKER, BROKER_INIT_VALUE);
     }
 
     public Operation createAccount(String userId, List<Integer> timeStamp)
@@ -175,16 +167,20 @@ public class ServerState {
         return new TransferOp(fromAccount, toAccount, amount, timeStamp);
     }
 
-    public boolean verifyConstraints(Operation op) {
+    public void verifyConstraints(Operation op) throws CouldNotExecuteOperation{
         switch(op.getType()) {
             case("OP_CREATE_ACCOUNT"):
-                return ! this.containsUser(op.getAccount());
+                if(!this.containsUser(op.getAccount())) {
+                    throw new CouldNotExecuteOperation();
+                }
             case("OP_TRANSFER_TO"):
                 TransferOp transferOp = (TransferOp) op;
-                return  this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount())
-                    && this.getBalance(transferOp.getAccount()) >= transferOp.getAmount();
+                if(this.containsUser(transferOp.getAccount()) && this.containsUser(transferOp.getDestAccount())
+                    && this.getBalance(transferOp.getAccount()) >= transferOp.getAmount()) {
+                    throw new CouldNotExecuteOperation();
+                }
             default:
-                return false;
+                throw new CouldNotExecuteOperation();
         }
     }
 
@@ -279,14 +275,15 @@ public class ServerState {
         }
         for (Operation op : executableOps) {
             if (isBiggerTimeStampValue(op.getPrev())) {
-                if (verifyConstraints(op)) {
-                    op.setStable(true);
+                op.setStable(true);
+                try {
+                    verifyConstraints(op);
                     doOp(op);
+                } catch (ServerStateException e) {
+                    System.out.println(e.getMessage());
                 }
-                else {
-                    for (int i = 0; i < replicaVectorClock.size(); i++) {
-                        valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
-                    }
+                for (int i = 0; i < replicaVectorClock.size(); i++) {
+                    valueVectorClock.set(i, Math.max(valueVectorClock.get(i), op.getTimeStamp().get(i)));
                 }
             }
         }
@@ -297,7 +294,6 @@ public class ServerState {
         return isBiggerTimeStampReplica(op.getTimeStamp());
     }
 
-    /* TODO : change to is bigger or equal? */
     public boolean isBiggerTimeStampValue(List<Integer> requestTimeStamp) {
         return Utils.compareVectorClocks(requestTimeStamp, valueVectorClock) == 1;
     }
@@ -329,5 +325,10 @@ public class ServerState {
         }
         debugPrint(String.format("Replica clock for server %s : %s", qualifier,
                 this.replicaVectorClock.toString()));
+    }
+
+    public void debugPrint(String message) {
+        if (debug)
+            System.err.println(message);
     }
 }
