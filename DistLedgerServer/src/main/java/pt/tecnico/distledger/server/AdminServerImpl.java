@@ -138,7 +138,7 @@ public class AdminServerImpl extends AdminServiceImplBase {
 
     private void propagateToSecondary(List<Operation> ops, String qualifier) {
         if (ops.size() == 0) {
-            this.state.debugPrint("No operations to propagate.");
+            this.state.debugPrint(String.format("No operations to propagate to %s.", qualifier));
             return;
         }
         try {

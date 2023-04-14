@@ -36,6 +36,7 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         }
         this.state.changetimeTableMapEntry(request.getQualifier(),
                 request.getReplicaTSList());
+        this.state.debugPrint(this.state.getTimeTableMap().toString());
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
         List<Operation> ops = state.getLedgerList().stream()
                 .map(op -> Converter.convertFromGrpc(op))
@@ -43,7 +44,6 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
         ops.forEach(op -> {
             if (!this.state.isRepeatedOp(op)) {
                 this.state.addOpToLedger(op);
-                this.state.mergeReplicaClock(op.getTimeStamp());
             }
         });
         this.state.updateReplicaClocks(
@@ -52,8 +52,8 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
                 String.format("Merging replica clock for received clock %s",
                         request.getReplicaTSList()));
         this.state.updateStableOps(); /* Execute stable ops */
-        PropagateStateResponse response = PropagateStateResponse
-                .getDefaultInstance();
+        PropagateStateResponse response = PropagateStateResponse.newBuilder()
+                .addAllReplicaTS(this.state.getReplicaVectorClock()).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

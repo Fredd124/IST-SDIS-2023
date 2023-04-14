@@ -216,14 +216,6 @@ public class ServerState {
                 this.replicaVectorClock.toString()));
     }
 
-    /* Merge replicaTS with operation timeStamp */
-    public void mergeReplicaClock(List<Integer> operationVectorClock) {
-        for (int i = 0; i < replicaVectorClock.size(); i++) {
-            replicaVectorClock.set(i, Math.max(replicaVectorClock.get(i),
-                    operationVectorClock.get(i)));
-        }
-    }
-
     /* Execute operation and change server state */
     public synchronized void doOp(Operation op) {
         if (op.getType().equals("OP_CREATE_ACCOUNT")) {
