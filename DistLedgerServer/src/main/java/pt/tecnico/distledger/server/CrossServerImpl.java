@@ -19,33 +19,41 @@ public class CrossServerImpl extends DistLedgerCrossServerServiceImplBase {
 
     private ServerState state;
 
-    public CrossServerImpl(ServerState state, DistLedgerServerCache serverCache) {
+    public CrossServerImpl(ServerState state,
+            DistLedgerServerCache serverCache) {
         this.state = state;
     }
 
     @Override
-    public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
-        if (!state.isActive()){
+    public void propagateState(PropagateStateRequest request,
+            StreamObserver<PropagateStateResponse> responseObserver) {
+        if (!state.isActive()) {
             state.debugPrint("Server is innactive.");
-            responseObserver.onError(UNAVAILABLE.withDescription("Server is innactive.").asRuntimeException());
+            responseObserver
+                    .onError(UNAVAILABLE.withDescription("Server is innactive.")
+                            .asRuntimeException());
             return;
         }
-        this.state.changetimeTableMapEntry(request.getQualifier(), request.getReplicaTSList());
+        this.state.changetimeTableMapEntry(request.getQualifier(),
+                request.getReplicaTSList());
         DistLedgerCommonDefinitions.LedgerState state = request.getState();
-        List<Operation> ops = state.getLedgerList().stream().map(op -> Converter.convertFromGrpc(op))
-            .collect(Collectors.toList());
+        List<Operation> ops = state.getLedgerList().stream()
+                .map(op -> Converter.convertFromGrpc(op))
+                .collect(Collectors.toList());
         ops.forEach(op -> {
-            if (! this.state.isRepeatedOp(op)) {
+            if (!this.state.isRepeatedOp(op)) {
                 this.state.addOpToLedger(op);
                 this.state.mergeReplicaClock(op.getTimeStamp());
             }
         });
-        this.state.updateReplicaClocks(request.getReplicaTSList()); /* Merge clocks */
+        this.state.updateReplicaClocks(
+                request.getReplicaTSList()); /* Merge clocks */
         this.state.debugPrint(
-            String.format("Merging replica clock for received clock %s", request.getReplicaTSList())
-        );
+                String.format("Merging replica clock for received clock %s",
+                        request.getReplicaTSList()));
         this.state.updateStableOps(); /* Execute stable ops */
-        PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
+        PropagateStateResponse response = PropagateStateResponse
+                .getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
